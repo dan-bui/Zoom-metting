@@ -60,3 +60,91 @@
 </html>
 helo eiss
 helo eiss223
+
+from fastapi import FastAPI
+import requests
+import re
+import uvicorn
+from fastapi.responses import HTMLResponse, JSONResponse
+
+app = FastAPI()
+
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    # Bước 1: Gửi yêu cầu GET với các header cần thiết
+    url = "https://test.com/test1"
+    headers = {
+        "Cookie": "session=123, aspnet=345, alb=555, cors=888",
+        "User-Agent": "test3",
+        "Te": "test4",
+        "Connection": "test5",
+        "accept-language": "ja,en-us;q=0.7,en;q=0.3",
+        "content-type": "application/json; charset=UTF-8",
+        "Host": "test.com"
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return JSONResponse(content={"headers": headers}, status_code=200)
+    else:
+        print(response.status_code)
+        
+        # Bước 1.1: Gửi request login và lấy token và viewstate
+        login_url = "https://test.com/login"
+        login_headers = {
+            "content-type": "application/json; charset=UTF-8",
+            "Host": "test.com"
+        }
+        login_response = requests.get(login_url, headers=login_headers)
+        
+        if login_response.status_code != 200:
+            return HTMLResponse(content="<p>Login failed</p>", status_code=login_response.status_code)
+        
+        login_page = login_response.text
+        token_match = re.search(r'<input type="hidden" name="token" id="token" value="(.*?)">', login_page)
+        viewstate_match = re.search(r'<input type="hidden" name="viewstate" id="viewstate" value="(.*?)">', login_page)
+        
+        if not token_match or not viewstate_match:
+            return HTMLResponse(content="<p>Token or Viewstate not found</p>", status_code=404)
+        
+        token = token_match.group(1)
+        viewstate = viewstate_match.group(1)
+        
+        # Bước 1.2: Gửi request xử lý login bằng phương thức POST
+        login_data = {
+            "token": token,
+            "viewstate": viewstate,
+            "id": "1"
+        }
+        post_login_response = requests.post(login_url, headers=login_headers, data=login_data)
+        
+        if post_login_response.status_code != 200:
+            return HTMLResponse(content="<p>Post login failed</p>", status_code=post_login_response.status_code)
+        
+        aws_cookie = post_login_response.cookies.get("aws", "")
+        
+        # Bước 1.3: Gửi request API với cookie aws từ bước 1.2
+        api_url = "https://test.com/api"
+        api_headers = {
+            "content-type": "application/json; charset=UTF-8",
+            "Cookie": f"aws={aws_cookie}",
+            "Host": "test.com"
+        }
+        api_response = requests.get(api_url, headers=api_headers)
+        
+        if api_response.status_code != 200:
+            return HTMLResponse(content="<p>API request failed</p>", status_code=api_response.status_code)
+        
+        # Bước 1.4: Lấy các giá trị cookie từ các bước trước và cập nhật headers của bước 1
+        session_cookie = login_response.cookies.get("session", "")
+        aspnet_cookie = post_login_response.cookies.get("aspnet", "")
+        alb_cookie = api_response.cookies.get("alb", "")
+        cors_cookie = api_response.cookies.get("cors", "")
+        
+        final_cookies = f"session={session_cookie}, aspnet={aspnet_cookie}, alb={alb_cookie}, cors={cors_cookie}"
+        headers["Cookie"] = final_cookies
+        
+        return JSONResponse(content={"headers": headers}, status_code=200)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
