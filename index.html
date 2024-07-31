@@ -60,3 +60,615 @@
 </html>
 helo eiss
 helo eiss223
+
+import burp.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.net.URL;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, ActionListener {
+
+    private IBurpExtenderCallbacks callbacks;
+    private IExtensionHelpers helpers;
+    private JTable logTable;
+    private DefaultTableModel tableModel;
+    private int logCounter = 1; // Đếm số lượng log
+    private JComboBox<String> autoCompleteComboBox; // Khai báo biến instance cho ComboBox
+    private JComboBox<String> reasonsDecisionComboBox;
+    private JTextArea duplicateTextArea;
+    private JTextArea duplicateTextAreaSummary;
+    private JTextArea requestTextArea;
+    private JTextArea responseTextArea;
+
+    @Override
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
+        this.callbacks = callbacks;
+        this.helpers = callbacks.getHelpers();
+        callbacks.setExtensionName("Junkai Extension");
+        callbacks.addSuiteTab(this);
+        callbacks.registerContextMenuFactory(this);
+    }
+
+    @Override
+    public String getTabCaption() {
+        return "Junkai";
+    }
+
+    @Override
+    public Component getUiComponent() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // Panel button ở bên trên
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+        JButton checkButton = new JButton("出力");
+        checkButton.addActionListener(e -> downloadProxyLog());
+        JButton commentButton = new JButton("遷移流れ自動生成");
+        commentButton.addActionListener(e -> addTransitionalFlow());
+        JButton checkDuplicateButton = new JButton("重複確認");
+        checkDuplicateButton.addActionListener(e -> checkDuplicateURL());
+        JButton cleanLog = new JButton("Clean Log");
+        cleanLog.addActionListener(e -> cleanLogs());
+
+        // Khởi tạo AutoCompleteComboBox
+        autoCompleteComboBox = new JComboBox<>(new String[]{"", "", "", "", "", ""});
+        autoCompleteComboBox.setPreferredSize(new Dimension(100, 25)); // Cài đặt kích thước cho AutoCompleteComboBox
+        autoCompleteComboBox.setMaximumSize(new Dimension(100, 25)); // Giới hạn kích thước tối đa
+        JButton addLevelButton = new JButton("Add Level");
+        addLevelButton.addActionListener(e -> addLevel());
+
+        // Thêm AutoCompleteComboBox và nút "Add Level" vào buttonPanel
+        buttonPanel.add(autoCompleteComboBox);
+        buttonPanel.add(addLevelButton);
+
+        reasonsDecisionComboBox = new JComboBox<>(new String[]{"", "", "", "", "", ""});
+        reasonsDecisionComboBox.setPreferredSize(new Dimension(300, 25)); // Cài đặt kích thước cho AutoCompleteComboBox
+        reasonsDecisionComboBox.setMaximumSize(new Dimension(300, 25)); // Giới hạn kích thước tối đa
+        JButton addReasonsDecisionButton = new JButton("Add Reasons Decision");
+        addReasonsDecisionButton.addActionListener(e -> addReasonsDecision());
+
+        // Thêm AutoCompleteComboBox và nút "Add Level" vào buttonPanel
+        buttonPanel.add(reasonsDecisionComboBox);
+        buttonPanel.add(addReasonsDecisionButton);
+
+        JLabel logoLabel = new JLabel();
+        ImageIcon logoIcon = new ImageIcon("");
+        Image logoImage = logoIcon.getImage(); // Lấy đối tượng Image từ ImageIcon
+        Image scaledLogoImage = logoImage.getScaledInstance(80, 50, Image.SCALE_SMOOTH); // Thay đổi kích cỡ hình ảnh
+        ImageIcon scaledLogoIcon = new ImageIcon(scaledLogoImage); // Tạo một ImageIcon mới từ hình ảnh đã thay đổi kích cỡ
+        logoLabel.setIcon(scaledLogoIcon);
+
+        buttonPanel.add(checkButton);
+        buttonPanel.add(commentButton);
+        buttonPanel.add(checkDuplicateButton);
+        buttonPanel.add(cleanLog);
+        buttonPanel.add(logoLabel);
+        panel.add(buttonPanel, BorderLayout.NORTH);
+
+        // Tạo table model cho bảng log
+        String[] columnNames = {"No", "Transitional Flow", "URL", "Method", "Status", "Request Body", "Remarks", "Level", "Reasons Decision", "Request", "Response"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        logTable = new JTable(tableModel);
+        JScrollPane scrollPaneTable = new JScrollPane(logTable);
+
+        // Panel của textarea ở cuối
+        JPanel textAreaPanel = new JPanel(new GridLayout(1, 4));
+        duplicateTextArea = new JTextArea(20, 30);
+        JScrollPane scrollPaneDuplicateTextArea = new JScrollPane(duplicateTextArea);
+        duplicateTextArea.setBorder(BorderFactory.createTitledBorder("重複確認ログ---------詳細"));
+
+        duplicateTextAreaSummary = new JTextArea(20, 30);
+        JScrollPane scrollPaneDuplicateTextAreaSummaryResults = new JScrollPane(duplicateTextAreaSummary);
+        duplicateTextAreaSummary.setBorder(BorderFactory.createTitledBorder("重複確認ログ---------概要"));
+
+        requestTextArea = new JTextArea(20, 30);
+        JScrollPane scrollPaneRequestTextArea = new JScrollPane(requestTextArea);
+        requestTextArea.setBorder(BorderFactory.createTitledBorder("Request"));
+
+        responseTextArea = new JTextArea(20, 30);
+        JScrollPane scrollPaneResponseTextArea = new JScrollPane(responseTextArea);
+        responseTextArea.setBorder(BorderFactory.createTitledBorder("Response"));
+
+        textAreaPanel.add(scrollPaneRequestTextArea);
+        textAreaPanel.add(scrollPaneResponseTextArea);
+        textAreaPanel.add(scrollPaneDuplicateTextArea);
+        textAreaPanel.add(scrollPaneDuplicateTextAreaSummaryResults);
+
+        // Sử dụng JSplitPane để có thể kéo lên xuống giữa bảng và text areas
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPaneTable, textAreaPanel);
+        splitPane.setResizeWeight(0.5); // Chia đều không gian ban đầu cho cả hai phần
+
+        panel.add(splitPane, BorderLayout.CENTER);
+
+        logTable.getSelectionModel().addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && logTable.getSelectedRow() != -1) {
+                updateTextAreas(logTable.getSelectedRow());
+            }
+        });
+
+        logTable.getTableHeader().setReorderingAllowed(false);
+        return panel;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        callbacks.printOutput("Junkai");
+    }
+
+    @Override
+    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+        List<JMenuItem> menuItems = new ArrayList<>();
+        JMenuItem sendToJunkaiItem = new JMenuItem("Send to Junkai");
+        sendToJunkaiItem.addActionListener(e -> {
+            IHttpRequestResponse[] selectedItems = invocation.getSelectedMessages();
+            if (selectedItems != null && selectedItems.length > 0) {
+                for (IHttpRequestResponse selectedItem : selectedItems) {
+                    String url = helpers.analyzeRequest(selectedItem).getUrl().toString();
+                    String method = helpers.analyzeRequest(selectedItem).getMethod();
+                    // Get request body
+                    byte[] request = selectedItem.getRequest();
+                    int bodyOffset = helpers.analyzeRequest(request).getBodyOffset();
+                    String requestBody = request.length > bodyOffset ? new String(request, bodyOffset, request.length - bodyOffset) : "-";
+
+                    String requestColumn = "-";
+                    if (selectedItem.getRequest() != null) {
+                        byte[] Request = selectedItem.getRequest();
+                        requestColumn = new String(Request);
+                    }
+
+                    String responseColumn = "-";
+                    if (selectedItem.getResponse() != null) {
+                        byte[] response = selectedItem.getResponse();
+                        responseColumn = new String(response);
+                    }
+                    // Remove port from URL if it is the default port
+                    try {
+                        URL parsedUrl = new URL(url);
+                        int port = parsedUrl.getPort();
+                        if (port == parsedUrl.getDefaultPort()) {
+                            url = parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + parsedUrl.getFile();
+                        }
+                    } catch (Exception ex) {
+                        // Handle exception
+                    }
+                    // Get status code from response
+                    String statusCode;
+                    if (selectedItem.getResponse() != null) {
+                        statusCode = Short.toString(helpers.analyzeResponse(selectedItem.getResponse()).getStatusCode());
+                    } else {
+                        statusCode = "-";
+                    }
+                    // Add a new row to the table with the log details
+                    tableModel.addRow(new Object[]{logCounter++, "", url, method, statusCode, requestBody, "-", "-", "-", requestColumn, responseColumn});
+                }
+            }
+        });
+        menuItems.add(sendToJunkaiItem);
+
+        return menuItems;
+    }
+
+    private void addLevel() {
+        String selectedLevel = (String) autoCompleteComboBox.getSelectedItem();
+        if (selectedLevel != null && logTable.getSelectedRow() != -1) {
+            int[] selectedRows = logTable.getSelectedRows();
+            for (int selectedRow : selectedRows) {
+                tableModel.setValueAt(selectedLevel, selectedRow, tableModel.findColumn("Level"));
+            }
+        }
+    }
+
+    private void addReasonsDecision() {
+        String selectedLevel = (String) reasonsDecisionComboBox.getSelectedItem();
+        if (selectedLevel != null && logTable.getSelectedRow() != -1) {
+            int[] selectedRows = logTable.getSelectedRows();
+            for (int selectedRow : selectedRows) {
+                tableModel.setValueAt(selectedLevel, selectedRow, tableModel.findColumn("Reasons Decision"));
+            }
+        }
+    }
+
+    private void updateTextAreas(int selectedRow) {
+        int requestColumnIndex = tableModel.findColumn("Request");
+        int responseColumnIndex = tableModel.findColumn("Response");
+        String request = (String) logTable.getValueAt(selectedRow, requestColumnIndex); // Assuming the Request column is at index 3
+        String response = (String) logTable.getValueAt(selectedRow, responseColumnIndex); // Assuming the Response column is at index 4
+
+        requestTextArea.setText(request);
+        responseTextArea.setText(response);
+
+        requestTextArea.setEditable(false);
+        responseTextArea.setEditable(false);
+    }
+
+    private void addTransitionalFlow() {
+        int rowCount = tableModel.getRowCount();
+        int transitionalFlowIndex = tableModel.findColumn("Transitional Flow");
+        int urlIndex = tableModel.findColumn("URL");
+        int responseIndex = tableModel.findColumn("Response");
+
+        for (int i = 1; i < rowCount; i++) {
+            String transitionalFlow = (String) tableModel.getValueAt(i, transitionalFlowIndex);
+            if (transitionalFlow == null || transitionalFlow.isEmpty()) {
+                // Bước 1: Tìm log có "Transitional Flow" trống
+                String currentUrl = (String) tableModel.getValueAt(i, urlIndex);
+                String path = "";
+                try {
+                    URL parsedUrl = new URL(currentUrl);
+                    path = parsedUrl.getPath();
+                } catch (Exception e) {
+                    // Handle exception
+                }
+
+                // Lấy "Transitional Flow" của log ngay phía trước
+                String previousTransitionalFlow = (String) tableModel.getValueAt(i - 1, transitionalFlowIndex);
+                if (previousTransitionalFlow == null) {
+                    previousTransitionalFlow = "";
+                }
+
+                // Nếu "Transitional Flow" của log phía trước có chứa "_" kèm số
+                Pattern suffixPattern = Pattern.compile("_(\\d+)$");
+                Matcher suffixMatcher = suffixPattern.matcher(previousTransitionalFlow);
+                if (suffixMatcher.find()) {
+                    previousTransitionalFlow = previousTransitionalFlow.substring(0, suffixMatcher.start());
+                }
+
+                // Bước 2: Lấy url path của log đó
+                String previousResponse = (String) tableModel.getValueAt(i - 1, responseIndex);
+
+                // Bước 3: Tìm url path đó trong ô response của log ngay phía trước
+                String matchedText = "";
+                if (previousResponse != null) {
+                    Pattern pattern = Pattern.compile("<(\\w+)([^>]*" + Pattern.quote(path) + "[^>]*)>([\\s\\S]*?)</\\1>", Pattern.DOTALL);
+                    Matcher matcher = pattern.matcher(previousResponse);
+                    if (matcher.find()) {
+                        String tagContainingPath = matcher.group(0);
+                        // Trích xuất text của tag
+                        Pattern textPattern = Pattern.compile("(?<=^|>)[^><]+?(?=<|$)");
+                        Matcher textMatcher = textPattern.matcher(tagContainingPath);
+                        while (textMatcher.find()) {
+                            String text = textMatcher.group().trim();
+                            if (!text.contains("{") && !text.contains("}") && !text.isEmpty()) {
+                                matchedText = text;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Bước 4: Kết hợp "Transitional Flow" của log ngay phía trước với ký tự > và text vừa lấy được hoặc "NULL" nếu không tìm thấy text của URL path
+                String newTransitionalFlow = previousTransitionalFlow + ">" + (matchedText.isEmpty() ? "NULL" : matchedText);
+
+                // Kiểm tra và thêm số thứ tự nếu log liên tiếp có "Transitional Flow" trống
+                int suffixNumber = 1;
+                while (i < rowCount && ((String) tableModel.getValueAt(i, transitionalFlowIndex)).isEmpty()) {
+                    tableModel.setValueAt(newTransitionalFlow + "_" + suffixNumber, i, transitionalFlowIndex);
+                    suffixNumber++;
+                    i++;
+                }
+            }
+        }
+    }
+
+    private void checkDuplicateURL() {
+        int[] selectedRows = logTable.getSelectedRows();
+
+        if (selectedRows.length == 0) {
+            JOptionPane.showMessageDialog(null, "Hãy chọn log cần so sánh.");
+            return;
+        } else if (selectedRows.length > 1) {
+            JOptionPane.showMessageDialog(null, "Chỉ được so sánh 1 log.");
+            return;
+        }
+
+        int selectedRow = selectedRows[0];
+        String originalSelectedURL = tableModel.getValueAt(selectedRow, tableModel.findColumn("URL")).toString();
+        String selectedMethod = tableModel.getValueAt(selectedRow, tableModel.findColumn("Method")).toString();
+        int selectedNo = (int) tableModel.getValueAt(selectedRow, tableModel.findColumn("No"));
+
+        String selectedContentType = getContentType(selectedRow);
+
+        String selectedURL = originalSelectedURL.split("\\?")[0];
+
+        StringBuilder output = new StringBuilder();
+        output.append("確認したい箇所\n");
+        output.append("No: ").append(selectedNo).append("\n");
+        output.append("url: ").append(selectedURL).append("\n");
+        output.append("method: ").append(selectedMethod).append("\n");
+        output.append("Content-Type: ").append(selectedContentType).append("\n");
+
+        List<String> selectedQueryParameters = extractQueryParameters(originalSelectedURL);
+        if (!selectedQueryParameters.isEmpty()) {
+            Collections.sort(selectedQueryParameters);
+            output.append("Query Parameters: ");
+            output.append(String.join(", ", selectedQueryParameters));
+            output.append("\n");
+        } else {
+            output.append("Query Parameters: None\n");
+        }
+
+        List<String> selectedBodyParameters = new ArrayList<>();
+        if (selectedContentType.equals("application/x-www-form-urlencoded")) {
+            selectedBodyParameters = extractFormUrlEncodedBodyParameters(selectedRow);
+        } else if (selectedContentType.startsWith("multipart/form-data")) {
+            selectedBodyParameters = extractMultipartBodyParameters(selectedRow);
+        } else if (selectedContentType.startsWith("application/json")) {
+            selectedBodyParameters = extractJsonBodyParameters(selectedRow);
+        }
+        Collections.sort(selectedBodyParameters);
+        output.append("Body Parameters: ");
+        output.append(String.join(", ", selectedBodyParameters));
+        output.append("\n");
+
+        output.append("\n=====他の箇所と比較===========\n");
+
+        int rowCount = tableModel.getRowCount();
+        boolean isDuplicateFound = false;
+        StringBuilder summaryOutput = new StringBuilder();
+
+        for (int row = 0; row < rowCount; row++) {
+            if (row == selectedRow) continue;
+
+            String originalURL = tableModel.getValueAt(row, tableModel.findColumn("URL")).toString();
+            String url = originalURL.split("\\?")[0];
+            String method = tableModel.getValueAt(row, tableModel.findColumn("Method")).toString();
+            int no = (int) tableModel.getValueAt(row, tableModel.findColumn("No"));
+
+            String contentType = getContentType(row);
+
+            output.append("No: ").append(no).append("\n");
+            output.append("url: ").append(url).append("\n");
+            output.append("method: ").append(method).append("\n");
+            output.append("Content-Type: ").append(contentType).append("\n");
+
+            List<String> queryParameters = extractQueryParameters(originalURL);
+            if (!queryParameters.isEmpty()) {
+                Collections.sort(queryParameters);
+                output.append("Query Parameters: ");
+                output.append(String.join(", ", queryParameters));
+                output.append("\n");
+            } else {
+                output.append("Query Parameters: None\n");
+            }
+
+            List<String> bodyParameters = new ArrayList<>();
+            if (contentType.equals("application/x-www-form-urlencoded")) {
+                bodyParameters = extractFormUrlEncodedBodyParameters(row);
+            } else if (contentType.startsWith("multipart/form-data")) {
+                bodyParameters = extractMultipartBodyParameters(row);
+            } else if (contentType.startsWith("application/json")) {
+                bodyParameters = extractJsonBodyParameters(row);
+            }
+            Collections.sort(bodyParameters);
+            output.append("Body Parameters: ");
+            output.append(String.join(", ", bodyParameters));
+            output.append("\n");
+            output.append("\n____________________________\n");
+
+            if (selectedURL.equals(url) && selectedMethod.equals(method) && selectedContentType.equals(contentType) && selectedQueryParameters.equals(queryParameters)) {
+                if (selectedContentType.equals("application/x-www-form-urlencoded") || selectedContentType.startsWith("multipart/form-data") || selectedContentType.startsWith("application/json")) {
+                    if (selectedBodyParameters.equals(bodyParameters)) {
+                        isDuplicateFound = true;
+                        summaryOutput.append("No").append(no).append(": ○\n");
+                    } else {
+                        summaryOutput.append("No").append(no).append(": X\n");
+                    }
+                } else {
+                    isDuplicateFound = true;
+                    summaryOutput.append("No").append(no).append(": ○\n");
+                }
+            } else {
+                summaryOutput.append("No").append(no).append(": X\n");
+            }
+        }
+
+        duplicateTextArea.setText(output.toString());
+        duplicateTextAreaSummary.setText(summaryOutput.toString());
+    }
+
+
+    // Hàm để trích xuất các tham số truy vấn từ URL
+    private List<String> extractQueryParameters(String url) {
+        List<String> queryParameters = new ArrayList<>();
+        try {
+            URL parsedUrl = new URL(url);
+            String query = parsedUrl.getQuery();
+            if (query != null && !query.isEmpty()) {
+                String[] pairs = query.split("&");
+                for (String pair : pairs) {
+                    int idx = pair.indexOf("=");
+                    if (idx > 0) {
+                        queryParameters.add(pair.substring(0, idx));
+                    } else {
+                        queryParameters.add(pair);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PrintWriter writer = new PrintWriter(callbacks.getStderr(), true);
+            e.printStackTrace(writer);
+        }
+        return queryParameters;
+    }
+
+    private String getContentType(int row) {
+        try {
+            String request = (String) tableModel.getValueAt(row, tableModel.findColumn("Request"));
+            if (request != null) {
+                String[] headers = request.split("\r\n|\r|\n");
+                for (String header : headers) {
+                    if (header.toLowerCase().startsWith("content-type:")) {
+                        return header.substring(header.indexOf(":") + 1).trim();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PrintWriter writer = new PrintWriter(callbacks.getStderr(), true);
+            e.printStackTrace(writer);
+        }
+        return "None";
+    }
+
+    private List<String> extractFormUrlEncodedBodyParameters(int row) {
+        List<String> bodyParameters = new ArrayList<>();
+        try {
+            String request = (String) tableModel.getValueAt(row, tableModel.findColumn("Request"));
+            if (request != null) {
+                String[] requestParts = request.split("\r\n\r\n", 2);
+                if (requestParts.length > 1) {
+                    String body = requestParts[1];
+                    String[] pairs = body.split("&");
+                    for (String pair : pairs) {
+                        int idx = pair.indexOf("=");
+                        if (idx > 0) {
+                            bodyParameters.add(pair.substring(0, idx));
+                        } else {
+                            bodyParameters.add(pair);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PrintWriter writer = new PrintWriter(callbacks.getStderr(), true);
+            e.printStackTrace(writer);
+        }
+        return bodyParameters;
+    }
+
+    private List<String> extractMultipartBodyParameters(int row) {
+        List<String> bodyParameters = new ArrayList<>();
+        try {
+            String request = (String) tableModel.getValueAt(row, tableModel.findColumn("Request"));
+            if (request != null) {
+                String[] requestParts = request.split("\r\n\r\n", 2);
+                if (requestParts.length > 1) {
+                    String body = requestParts[1];
+                    String contentType = getContentType(row);
+                    if (contentType.startsWith("multipart/form-data")) {
+                        String boundary = contentType.substring(contentType.lastIndexOf("=") + 1).trim();
+                        String[] parts = body.split("--" + boundary);
+                        for (String part : parts) {
+                            if (!part.trim().isEmpty()) {
+                                Pattern pattern = Pattern.compile("name=\"(.*?)\"");
+                                Matcher matcher = pattern.matcher(part);
+                                if (matcher.find()) {
+                                    String key = matcher.group(1);
+                                    bodyParameters.add(key);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PrintWriter writer = new PrintWriter(callbacks.getStderr(), true);
+            e.printStackTrace(writer);
+        }
+        return bodyParameters;
+    }
+
+    private List<String> extractJsonBodyParameters(int row) {
+        List<String> bodyParameters = new ArrayList<>();
+        try {
+            String request = (String) tableModel.getValueAt(row, tableModel.findColumn("Request"));
+            if (request != null) {
+                String[] requestParts = request.split("\r\n\r\n", 2);
+                if (requestParts.length > 1) {
+                    String body = requestParts[1];
+                    ProcessBuilder pb = new ProcessBuilder("python", "C:\\Users\\buimi\\Desktop\\buffer\\報告書ダブルチェック\\checkJson.py");
+                    Process process = pb.start();
+
+                    OutputStream outputStream = process.getOutputStream();
+                    outputStream.write(body.getBytes());
+                    outputStream.close();
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        bodyParameters.add(line);
+                    }
+                    reader.close();
+                }
+            }
+        } catch (Exception e) {
+            PrintWriter writer = new PrintWriter(callbacks.getStderr(), true);
+            e.printStackTrace(writer);
+        }
+        return bodyParameters;
+    }
+
+
+    private void downloadProxyLog() {
+        // Lấy đường dẫn đến thư mục desktop
+        String desktopPath = System.getProperty("user.home") + File.separator + "Desktop";
+        String filePath = desktopPath + File.separator + "Junkai_Log.csv";
+
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(filePath), "UTF-8"))) {
+            // Ghi tiêu đề các cột vào file CSV, ngoại trừ các cột "Request" và "Response"
+            int columnCount = tableModel.getColumnCount();
+            for (int col = 0; col < columnCount; col++) {
+                String columnName = tableModel.getColumnName(col);
+                if (!columnName.equals("Request") && !columnName.equals("Response")) {
+                    writer.print(columnName);
+                    if (col < columnCount - 1) {
+                        writer.print(",");
+                    }
+                }
+            }  
+            writer.println();
+
+            // Ghi dữ liệu của bảng vào file CSV, ngoại trừ các cột "Request" và "Response"
+            int rowCount = tableModel.getRowCount();
+            for (int row = 0; row < rowCount; row++) {
+                for (int col = 0; col < columnCount; col++) {
+                    String columnName = tableModel.getColumnName(col);
+                    if (!columnName.equals("Request") && !columnName.equals("Response")) {
+                        writer.print(tableModel.getValueAt(row, col).toString());
+                        if (col < columnCount - 1) {
+                            writer.print(",");
+                        }
+                    }
+                }
+                writer.println();
+            }
+
+            // Hiển thị thông báo khi xuất thành công
+            callbacks.printOutput("Log đã được xuất ra file CSV tại: " + filePath);
+        } catch (Exception e) {
+            e.printStackTrace(new PrintWriter(callbacks.getStderr(), true));
+        }
+
+        // Xuất dữ liệu của cột "Transitional Flow" vào duplicateTextArea
+        StringBuilder transitionalFlowData = new StringBuilder();
+        int transitionalFlowColumnIndex = tableModel.findColumn("Transitional Flow");
+        int rowCount = tableModel.getRowCount();
+        for (int row = 0; row < rowCount; row++) {
+            transitionalFlowData.append(tableModel.getValueAt(row, transitionalFlowColumnIndex).toString()).append("\n");
+        }
+        duplicateTextArea.setText(transitionalFlowData.toString());
+    }
+
+    private void cleanLogs() {
+        int[] selectedRows = logTable.getSelectedRows();
+        if (selectedRows.length > 0) {
+            for (int i = selectedRows.length - 1; i >= 0; i--) {
+                tableModel.removeRow(selectedRows[i]);
+            }
+            // Cập nhật lại số thứ tự của cột "No"
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                tableModel.setValueAt(i + 1, i, tableModel.findColumn("No"));
+            }
+            logCounter = tableModel.getRowCount() + 1;
+        }
+    }
+}
