@@ -58,6 +58,64 @@
   <script src="/api.js"></script>
   <script src="/script.js"></script>
 </html>
-helo eiss
-helo eiss223
 
+
+
+import os
+from bs4 import BeautifulSoup
+import pandas as pd
+
+def process_report(report_path):
+    # Kiểm tra xem file có tồn tại hay không
+    if not os.path.exists(report_path):
+        print("File không tồn tại. Hãy nhập đúng đường dẫn.")
+        return
+
+    with open(report_path, 'r', encoding='utf-8') as file:
+        soup = BeautifulSoup(file, 'html.parser')
+
+    # Danh sách lưu kết quả để ghi vào file Excel
+    results = []
+
+    syn_scanner_divs = soup.find_all('div', string=lambda text: text and 'Nner' in text)
+
+    for syn_div in syn_scanner_divs:
+        parent_div_id = syn_div.get('id')
+        if not parent_div_id:
+            continue
+        tainer_id = f"{parent_div_id}-container"
+
+        # Bước 4: Tìm thẻ div của id bước 3
+        tainer_div = soup.find('div', id=tainer_id)
+        if not tainer_div:
+            continue
+
+        output_div = tainer_div.find('div', string=lambda text: text and 'Pluut' in text)
+        if not output_div:
+            continue
+
+        # Bước 6: Tìm thẻ <h2> ngay sau thẻ "Plugin Output"
+        next_h2 = output_div.find_next('h2')
+        if next_h2:
+            text_h2 = next_h2.text.strip()
+            try:
+                # Tách text theo dạng text1/số/text2
+                text1, number, text2 = text_h2.split('/')
+                # Thêm kết quả vào danh sách
+                results.append([text1, number, text2])
+            except ValueError:
+                continue
+
+    # Bước 7: Ghi kết quả vào file Excel
+    if results:
+        df = pd.DataFrame(results, columns=['Text1', 'Number', 'Text2'])
+        output_excel_path = 'nessus_report_output.xlsx'
+        df.to_excel(output_excel_path, index=False)
+        print(f"Kết quả đã được ghi thành công vào {output_excel_path}")
+    else:
+        print("Không tìm thấy dữ liệu phù hợp.")
+
+# Chạy chương trình
+if __name__ == "__main__":
+    report_path = input("Hãy nhập đường dẫn tới báo cáo Nessus HTML: ")
+    process_report(report_path)
