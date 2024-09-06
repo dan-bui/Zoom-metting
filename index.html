@@ -60,3 +60,86 @@
 </html>
 
 
+from flask import Flask, render_template_string, request
+from flask_mail import Mail, Message
+from email_validator import validate_email, EmailNotValidError
+
+app = Flask(__name__)
+
+# Cấu hình Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'm'
+app.config['MAIL_PASSWORD'] = ''
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
+mail = Mail(app)
+
+# Biểu mẫu HTML
+form_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mail Header Injection Demo</title>
+</head>
+<body>
+    <h1>Contact Us</h1>
+    <form action="/" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email"><br><br>
+
+        <label for="message">Message:</label><br>
+        <textarea id="message" name="message"></textarea><br><br>
+
+        <input type="submit" name="submit" value="Send">
+    </form>
+</body>
+</html>
+"""
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        name = request.form['name']
+        email_input = request.form['email']
+        message = request.form['message']
+
+        # Tách các dòng tiêu đề email dựa trên \r\n
+        parts = email_input.split("\r\n")
+        email = parts[0]  # Lấy phần đầu tiên làm địa chỉ email chính
+
+        custom_headers = {}
+        if len(parts) > 1:
+            additional_headers = parts[1:]  # Các phần sau sẽ là các tiêu đề bổ sung
+            
+            # Tạo tiêu đề bổ sung
+            for header in additional_headers:
+                if ": " in header:
+                    key, value = header.split(": ", 1)
+                    custom_headers[key.strip()] = value.strip()
+
+        # Tạo email
+        msg = Message(f"Contact Form Submission from {name}",
+                      sender=app.config['MAIL_USERNAME'],
+                      recipients=[email])  # Chỉ gửi đến địa chỉ email chính
+        msg.body = f"You have received a new message from {name}.\n\n{message}"
+
+        # Thêm tiêu đề bổ sung nếu có
+        for key, value in custom_headers.items():
+            msg.headers[key] = value
+
+        try:
+            mail.send(msg)
+            return "Message sent successfully!"
+        except Exception as e:
+            return f"Failed to send the message. Error: {str(e)}"
+
+    return render_template_string(form_html)
+
+if __name__ == '__main__':
+    app.run(debug=True)
