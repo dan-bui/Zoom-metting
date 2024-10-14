@@ -60,3 +60,27 @@
 </html>
 
 
+excel_data = pd.ExcelFile(output_file)
+
+    # Tìm kiếm từng vulnest trong các sheet khác
+    with pd.ExcelWriter(output_file, engine='openpyxl', mode='a') as writer:
+        for row_idx, vulnerability in enumerate(unique_vulnerabilities, start=2):
+            found_vulnerability = False
+            for i, sheet_name in enumerate(excel_data.sheet_names, start=1):
+                if sheet_name == "check":
+                    continue  # Bỏ qua sheet 'check'
+
+                df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
+                
+                # Kiểm tra vulnst trong ô E2 của sheet này
+                if df_sheet['E2'].values[0] == vulnerability:
+                    found_vulnerability = True
+                    break
+            
+            # Nếu tìm thấy vulnerability trong sheet
+            if found_vulnerability:
+                # Tìm allText trong cột 'allText' của sheet đó
+                if vulnerability in df_sheet['allText'].values:
+                    worksheet_check.cell(row=row_idx, column=2, value="〇")
+                else:
+                    worksheet_check.cell(row=row_idx, column=2, value="X")
