@@ -62,44 +62,4 @@
 
 
 
-# Mở lại file Excel với openpyxl để cập nhật 〇 hoặc X
-    wb = load_workbook(output_file)
-    ws_check = wb['check']  # Sheet 'check'
 
-    # Đọc lại dữ liệu từ file Excel với pandas
-    excel_data = pd.ExcelFile(output_file)
-    df_check = pd.read_excel(output_file, sheet_name='check')
-
-    # Lặp qua các giá trị allText trong sheet 'check'
-    for row_idx, all_text_value in enumerate(df_check['allText'], start=2):
-        for col_idx, vulnerability in enumerate(vulnerabilities_by_host_list, start=2):
-            found = False
-            for sheet_name in excel_data.sheet_names:
-                if sheet_name == "check":
-                    continue
-
-                df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
-
-                # Lấy giá trị E2 từ sheet hiện tại
-                e2_value = get_vulnerabilities_by_host(df_sheet)
-
-                # So khớp vulnerabilities_by_host với E2
-                if e2_value == vulnerability:
-                    # Nếu allText khớp, gắn 〇, ngược lại gắn X
-                    if all_text_value in df_sheet['allText'].values:
-                        print(f"Ghi 〇 tại hàng {row_idx}, cột {col_idx}")
-                        ws_check.cell(row=row_idx, column=col_idx, value="〇")
-                    else:
-                        print(f"Ghi X tại hàng {row_idx}, cột {col_idx}")
-                        ws_check.cell(row=row_idx, column=col_idx, value="X")
-                    found = True
-                    break
-
-            if not found:
-                print(f"Ghi X tại hàng {row_idx}, cột {col_idx} (không tìm thấy)")
-                ws_check.cell(row=row_idx, column=col_idx, value="X")
-
-    # Lưu các thay đổi vào file Excel
-    wb.save(output_file)
-
-    print(f"Kết quả đã được lưu vào file {output_file}")
