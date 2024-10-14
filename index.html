@@ -62,28 +62,4 @@
 
 
 
-for sheet_name in excel_data.sheet_names:
-        if sheet_name == "check":
-            continue  # Bỏ qua sheet 'check'
 
-        df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
-
-        # Lấy giá trị E2 của sheet hiện tại
-        e2_value = get_vulnerabilities_by_host(df_sheet)
-
-        # Lặp qua từng giá trị allText trong sheet hiện tại
-        for all_text_value in df_sheet['allText']:
-            # Nếu allText của sheet hiện tại có trong sheet 'check'
-            if all_text_value in df_check['allText'].values:
-                # Tìm dòng của allText trong sheet 'check'
-                row_idx = df_check.index[df_check['allText'] == all_text_value].tolist()[0] + 2  # Cộng 2 để lấy đúng hàng trong Excel (bắt đầu từ hàng 2)
-
-                # Tìm cột tương ứng với vulnerabilities_by_host trong sheet 'check'
-                col_idx = vulnerabilities_by_host_list.index(e2_value) + 2  # Cột bắt đầu từ B1 nên cộng 2
-
-                # Ghi 〇 vào ô tương ứng trong sheet 'check'
-                print(f"Ghi 〇 tại hàng {row_idx}, cột {col_idx} (allText: {all_text_value}, vulnerabilities_by_host: {e2_value})")
-                ws_check.cell(row=row_idx, column=col_idx, value="〇")
-
-    # Lưu các thay đổi vào file Excel
-    wb.save(output_file)
