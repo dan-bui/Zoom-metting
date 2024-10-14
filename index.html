@@ -61,16 +61,4 @@
 
 
 
-vulnerability_columns = {}
-col_idx = 2  # Bắt đầu từ cột B
 
-for vulnerability in unique_vulnerabilities:
-    if vulnerability[0] not in vulnerability_columns:
-        worksheet_check.cell(row=1, column=col_idx, value=vulnerability[0])
-        vulnerability_columns[vulnerability[0]] = col_idx
-        col_idx += 1
-
-
-col_idx = vulnerability_columns.get(e2_value, None)
-if col_idx is not None:
-    ws_check.cell(row=row_idx, column=col_idx, value="〇")
