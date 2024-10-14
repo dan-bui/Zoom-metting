@@ -61,25 +61,4 @@
 
 
 
-with pd.ExcelWriter(output_file, engine='openpyxl', mode='a') as writer:
-        for row_idx, all_text_value in enumerate(df_check['allText'], start=2):
-            for col_idx, vulnerability in enumerate(unique_vulnerabilities, start=2):
-                found_vulnerability = False
-                for sheet_name in excel_data.sheet_names:
-                    if sheet_name == "check":
-                        continue  # Bỏ qua sheet 'check'
 
-                    df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
-                    
-                    # Lấy giá trị ở ô E2 bằng cách sử dụng vị trí hàng và cột
-                    e2_value = df_sheet.iloc[0, 4]  # Lấy giá trị từ hàng đầu tiên, cột thứ 5 (chỉ mục cột là 4)
-                    
-                    # Kiểm tra nếu E2 chứa vulnerabilities_by_host
-                    if e2_value == vulnerability:
-                        found_vulnerability = True
-                        # Nếu allText trong sheet 'check' khớp với allText trong sheet hiện tại
-                        if all_text_value in df_sheet['allText'].values:
-                            worksheet_check.cell(row=row_idx, column=col_idx, value="〇")
-                        else:
-                            worksheet_check.cell(row=row_idx, column=col_idx, value="X")
-                        break
