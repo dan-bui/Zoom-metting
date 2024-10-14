@@ -60,20 +60,4 @@
 </html>
 
 
-# Lấy text của thẻ a thứ hai và ghi vào ô E2
-            second_a_text = get_second_a_text(soup)
-            if second_a_text:
-                worksheet['E2'] = second_a_text
-            else:
-                worksheet['E2'] = "Không tìm thấy thẻ a thứ hai"
 
-
-def get_second_a_text(soup):
-    # Tìm thẻ a có text là "Vut"
-    first_a = soup.find('a', string="Vust")
-    if first_a:
-        # Tìm thẻ a ngay sau thẻ a đầu tiên (thẻ a thứ hai)
-        second_a = first_a.find_next_sibling('a')
-        if second_a:
-            return second_a.text.strip()
-    return None
