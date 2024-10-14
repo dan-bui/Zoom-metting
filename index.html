@@ -61,5 +61,51 @@
 
 
 
+    with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+        for i, html_file in enumerate(html_files, start=1):
+            df = process_nessus_report(html_file)
 
+            sheet_name = f"Sheet{i}"
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            vulnerabilities_by_host = get_vulnerabilities_by_host(df)
+
+            vulnerabilities_by_host_list.append((vulnerabilities_by_host, i))
+
+            all_texts.extend(df['allText'].tolist())
+
+        unique_all_texts = list(set(all_texts))
+
+        df_check = pd.DataFrame(unique_all_texts, columns=['allText'])
+        df_check.to_excel(writer, sheet_name='check', index=False)
+
+    wb = load_workbook(output_file)
+    ws_check = wb['check']  # Sheet 'check'
+
+    excel_data = pd.ExcelFile(output_file)
+    df_check = pd.read_excel(output_file, sheet_name='check')
+
+    for sheet_name in excel_data.sheet_names:
+        if sheet_name == "check":
+            continue  # Bỏ qua sheet 'check'
+
+        df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
+
+        e2_value = get_vulnerabilities_by_host(df_sheet)
+
+        for all_text_value in df_sheet['allText']:
+            if all_text_value in df_check['allText'].values:
+                row_idx = df_check.index[df_check['allText'] == all_text_value].tolist()[0] + 2  # Cộng 2 để lấy đúng hàng trong Excel (bắt đầu từ hàng 2)
+
+                for idx, (host, sheet_index) in enumerate(vulnerabilities_by_host_list):
+                    if host == e2_value and sheet_index == i:
+                        col_idx = idx + 2  # Cột bắt đầu từ B1 nên cộng 2
+                        break
+
+                print(f"Ghi 〇 tại hàng {row_idx}, cột {col_idx} (allText: {all_text_value}, vulnerabilities_by_host: {e2_value})")
+                ws_check.cell(row=row_idx, column=col_idx, value="〇")
+
+    wb.save(output_file)
+
+    print(f"Kết quả đã được lưu vào file {output_file}")
 
