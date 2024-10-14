@@ -59,5 +59,14 @@
   <script src="/script.js"></script>
 </html>
 
+for i, html_file in enumerate(html_files, start=1):
+            sheet_name = f"Sheet{i}"
+            df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
 
+            for col_idx, vulnerability in enumerate(unique_vulnerabilities, start=2):
+                # Kiểm tra xem vhost có trong cột allText của sheet này không
+                if vulnerability in df_sheet['allText'].values:
+                    worksheet_check.cell(row=i+1, column=col_idx, value="〇")
+                else:
+                    worksheet_check.cell(row=i+1, column=col_idx, value="X")
 
