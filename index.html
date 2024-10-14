@@ -60,21 +60,3 @@
 </html>
 
 
-for row_idx, vulnerability in enumerate(unique_vulnerabilities, start=2):
-            found_vulnerability = False
-            for i, html_file in enumerate(html_files, start=1):
-                sheet_name = f"Sheet{i}"
-                df_sheet = pd.read_excel(output_file, sheet_name=sheet_name)
-                
-                # Kiểm tra vulst trong ô E2 của sheet này
-                if pd.read_excel(output_file, sheet_name=sheet_name)['E2'].values[0] == vulnerability:
-                    found_vulnerability = True
-                    break
-            
-            # Nếu tìm thấy vulnerability trong sheet
-            if found_vulnerability:
-                # Tìm allText trong cột 'allText' của sheet đó
-                if vulnerability in df_sheet['allText'].values:
-                    worksheet_check.cell(row=row_idx, column=2, value="〇")
-                else:
-                    worksheet_check.cell(row=row_idx, column=2, value="X")
