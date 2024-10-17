@@ -61,4 +61,62 @@
 
 
 
+import os
+import re
+import pandas as pd
+
+def extract_emails_from_txt(folder_path):
+    # Danh sách để lưu email
+    email_list = []
+
+    # Duyệt qua tất cả các file trong thư mục
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".txt"):
+            file_path = os.path.join(folder_path, filename)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                
+                # Biểu thức chính quy để tìm email theo định dạng &email=AAA@gmail.com&
+                pattern = r"&email=([^&]+@gmail\.com[^&]*)&"
+                emails = re.findall(pattern, content)
+
+                # Thêm các email tìm được vào danh sách
+                email_list.extend(emails)
+
+    return email_list
+
+def save_to_excel(email_list, output_file):
+    # Tạo một DataFrame từ danh sách email
+    df = pd.DataFrame(email_list, columns=['Email'])
+
+    # Xử lý để tìm chuỗi đằng sau 'gmail.com' và lưu vào cột B
+    df['After Gmail'] = df['Email'].apply(lambda x: x.split('gmail.com', 1)[1] if 'gmail.com' in x else '')
+
+    # Xuất ra file Excel
+    df.to_excel(output_file, index=False)
+
+def main():
+    # Yêu cầu người dùng nhập thư mục chứa các file txt
+    folder_path = input("Hãy nhập đường dẫn tới thư mục chứa file .txt: ")
+
+    # Kiểm tra xem thư mục có tồn tại không
+    if not os.path.isdir(folder_path):
+        print("Thư mục không tồn tại.")
+        return
+
+    # Bước 1 & 2: Phân tích các file txt và tìm chuỗi email
+    email_list = extract_emails_from_txt(folder_path)
+
+    if not email_list:
+        print("Không tìm thấy email nào trong các file .txt.")
+        return
+
+    # Bước 3 & 4: Lưu email vào file Excel và phân tích chuỗi sau gmail.com
+    output_file = "output_emails.xlsx"
+    save_to_excel(email_list, output_file)
+
+    print(f"Kết quả đã được lưu vào {output_file}")
+
+if __name__ == "__main__":
+    main()
 
