@@ -61,4 +61,51 @@
 
 
 
+from fastapi import FastAPI
+import requests
+
+app = FastAPI()
+
+# Biến toàn cục để lưu giá trị của "test"
+test_value = None
+
+# Bước 1: Gửi request POST
+def send_request():
+    url = "https://test.com"
+    headers = {
+        "Cookie": "aws=123",
+        "Content-Type": "application/json"
+    }
+    body = {
+        "a": "124",
+        "data": {
+            "bui": "kk",
+            "real": "pp"
+        }
+    }
+
+    response = requests.post(url, json=body, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+# Bước 2: Lấy giá trị "test" từ response JSON
+def get_test_value():
+    global test_value
+    response_json = send_request()
+    if response_json:
+        test_value = response_json.get("qq", {}).get("test")
+        return test_value
+    return None
+
+# Bước 3: Tạo path "/dan" để trả về JSON
+@app.get("/dan")
+async def dan():
+    value = get_test_value()
+    if value:
+        return {"hello": value}
+    else:
+        return {"error": "Could not retrieve 'test' value"}
+
 
