@@ -60,13 +60,3 @@
 </html>
 
 
-pattern = r'^(?P<type>[^/]+)(?:/(?P<port>[^/]+))?(?:/(?P<service>.+))?$'
-
-# Thêm các cột type, port, service dựa trên giá trị của cột allText
-df_check[['type', 'port', 'service']] = df_check['allText'].apply(lambda x: pd.Series(re.match(pattern, x).groupdict()))
-
-# Điền dấu '-' cho những ô trống trong cột 'service' nếu không có giá trị
-df_check['service'].fillna('-', inplace=True)
-
-# Cập nhật lại DataFrame 'df_check' vào sheet 'check' trong file Excel
-df_check.to_excel(writer, sheet_name='check', index=False)
