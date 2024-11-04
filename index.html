@@ -60,24 +60,3 @@
 </html>
 
 
-ws_check.insert_cols(2, amount=3)  # Chèn 3 cột mới từ cột B
-
-# Đặt tiêu đề cho các cột mới
-ws_check['B1'] = 'type'
-ws_check['C1'] = 'port'
-ws_check['D1'] = 'service'
-
-# Biểu thức chính quy để tách 'type', 'port', 'service' từ 'allText'
-pattern = r'^(?P<type>[^/]+)(?:/(?P<port>[^/]+))?(?:/(?P<service>.+))?$'
-
-# Lặp qua các hàng trong sheet 'check' để phân tách và điền giá trị
-for row in range(2, ws_check.max_row + 1):  # Bắt đầu từ hàng 2, vì hàng 1 là tiêu đề
-    all_text_value = ws_check[f'A{row}'].value  # Cột 'allText' là cột A
-
-    if all_text_value:
-        match = re.match(pattern, all_text_value)
-        if match:
-            # Điền dữ liệu vào các cột 'type', 'port', 'service'
-            ws_check[f'B{row}'] = match.group('type')
-            ws_check[f'C{row}'] = match.group('port') if match.group('port') else '-'
-            ws_check[f'D{row}'] = match.group('service') if match.group('service') else '-'
