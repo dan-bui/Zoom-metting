@@ -60,3 +60,37 @@
 </html>
 
 
+from fastapi import FastAPI
+import httpx
+from pydantic import BaseModel
+from typing import List, Optional
+
+app = FastAPI()
+
+# Cấu trúc request body
+class RequestBody(BaseModel):
+    values: List[List[Optional[str]]]
+
+@app.post("/send-request")
+async def send_request():
+    url = "http://test.com?id=111&name=aa"
+    headers = {
+        "Cookie": "aws=123; azure=123333",
+        "Content-Length": "200",
+        "X-Gmail-Btai": "[null, null, 1]",
+        "Content-Type": "application/json"
+    }
+    body = [
+        [
+            44,
+            50,
+            None,
+            "tessst",
+            [1, 2]
+        ]
+    ]
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=body)
+    
+    return {"status_code": response.status_code, "response_text": response.text}
