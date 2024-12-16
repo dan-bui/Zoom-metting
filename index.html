@@ -60,3 +60,35 @@
 </html>
 
 
+
+
+import re
+
+# Đường dẫn tới file văn bản nguồn và file đích
+input_file_path = 'input.txt'
+output_file_path = 'output_ids.txt'
+
+# Hàm trích xuất ID từ file nguồn và ghi vào file đích
+def extract_ids(input_path, output_path):
+    try:
+        # Đọc nội dung file nguồn
+        with open(input_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+
+        # Sử dụng biểu thức chính quy để tìm tất cả các ID theo công thức "id":số
+        ids = re.findall(r'"id":\s*(\d+)', content)
+
+        # Ghi danh sách ID vào file đích, mỗi ID trên một dòng
+        with open(output_path, 'w', encoding='utf-8') as file:
+            for id_number in ids:
+                file.write(id_number + '\n')
+
+        print(f"Danh sách ID đã được trích xuất và ghi vào {output_path}")
+
+    except FileNotFoundError:
+        print(f"Không tìm thấy file: {input_path}")
+    except Exception as e:
+        print(f"Đã xảy ra lỗi: {e}")
+
+# Gọi hàm để xử lý
+extract_ids(input_file_path, output_file_path)
