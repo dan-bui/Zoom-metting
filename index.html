@@ -62,3 +62,32 @@
 
 
 
+import re
+
+# Đường dẫn tới file văn bản nguồn và file đích
+input_file_path = 'input.txt'
+output_file_path = 'reversed_output.txt'
+
+# Hàm đọc file, đảo ngược nội dung và ghi vào file mới
+def reverse_file_content(input_path, output_path):
+    try:
+        # Đọc nội dung file nguồn
+        with open(input_path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+
+        # Đảo ngược danh sách các dòng
+        reversed_lines = lines[::-1]
+
+        # Ghi nội dung đã đảo ngược vào file đích
+        with open(output_path, 'w', encoding='utf-8') as file:
+            file.writelines(reversed_lines)
+
+        print(f"Nội dung đã được đảo ngược và ghi vào {output_path}")
+
+    except FileNotFoundError:
+        print(f"Không tìm thấy file: {input_path}")
+    except Exception as e:
+        print(f"Đã xảy ra lỗi: {e}")
+
+# Gọi hàm để xử lý
+reverse_file_content(input_file_path, output_file_path)
