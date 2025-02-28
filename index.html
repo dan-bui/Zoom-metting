@@ -62,3 +62,49 @@
 
 
 
+import re
+import requests
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    # Bước 1: Gửi request POST với multipart/form-data
+    url = "https://test.com/test"
+    headers = {
+        "Host": "test.com",
+        "x-csrf-token": "123",
+        "Content-Type": "multipart/form-data; boundary=-----dan123"
+    }
+    data = """-----dan123
+Content-Disposition: form-data; name="hello"
+
+bui
+-----dan123
+Content-Disposition: form-data; name="min"
+
+kkk
+-----dan123--"""
+
+    response = requests.post(url, headers=headers, data=data)
+
+    # Bước 2: Dùng regex để lấy sessionid từ Set-Cookie trong response headers
+    session_id = None
+    if "Set-Cookie" in response.headers:
+        set_cookie_header = response.headers["Set-Cookie"]
+        match = re.search(r"sessionid=([^;]+)", set_cookie_header)
+        if match:
+            session_id = match.group(1)
+
+    # Xuất nội dung của response vào file (tùy chọn)
+    with open("response_output.txt", "w", encoding="utf-8") as file:
+        file.write(response.text)
+
+    # Trả về sessionid nếu tìm thấy
+    return {"sessionid": session_id if session_id else "Not Found"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
