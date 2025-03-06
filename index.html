@@ -61,22 +61,3 @@
 
 
 
-import hashlib
-
-def generate_md5_hash(username, realm, password):
-    # Tạo chuỗi theo định dạng username:realm:password
-    data = f"{username}:{realm}:{password}"
-    
-    # Tính toán giá trị MD5
-    md5_hash = hashlib.md5(data.encode()).hexdigest()
-    
-    return md5_hash
-
-# Ví dụ sử dụng
-username = "user"
-realm = "example.com"
-password = "mypassword"
-
-md5_result = generate_md5_hash(username, realm, password)
-print(f"MD5 Hash: {md5_result}")
-
