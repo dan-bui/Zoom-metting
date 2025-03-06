@@ -61,3 +61,85 @@
 
 
 
+from fastapi import FastAPI
+import requests
+import re
+import hashlib
+import uvicorn
+
+app = FastAPI()
+
+# Hàm tính MD5
+def md5_hash(data):
+    """Tạo MD5 hash của chuỗi"""
+    return hashlib.md5(data.encode()).hexdigest()
+
+# Hàm tính response Digest Authentication
+def calculate_digest_response(username, password, realm, method, uri, nonce, cnonce, nc, qop):
+    """Tính giá trị response cho Digest Authentication"""
+    HA1 = md5_hash(f"{username}:{realm}:{password}")
+    HA2 = md5_hash(f"{method}:{uri}")
+    response = md5_hash(f"{HA1}:{nonce}:{nc}:{cnonce}:{qop}:{HA2}")
+    return response
+
+@app.get("/")
+def read_root():
+    # Bước 1: Gửi request lần 1
+    url = "https://test.com/test1"
+    headers = {
+        "Cookie": "phpsesionID=test2, csrftoken=133",
+        "User-Agent": "test3",
+        "Te": "test4",
+        "Connection": "test5",
+        "accept-language": "ja,en-us;q=0.7,en;q=0.3",
+        "content-type": "application/json; charset=UTF-8",
+        "Host": "test.com"
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        # Lấy nonce và response từ Authorization header
+        auth_header = response.headers.get("Authorization", "")
+        nonce_match = re.search(r'nonce="([^"]+)"', auth_header)
+        response_match = re.search(r'response="([^"]+)"', auth_header)
+
+        if nonce_match and response_match:
+            nonce = nonce_match.group(1)
+            response_value = response_match.group(1)
+            return {"status": 200, "nonce": nonce, "response": response_value}
+
+    elif response.status_code == 401:
+        # Lấy nonce từ WWW-Authenticate header
+        auth_header = response.headers.get("WWW-Authenticate", "")
+        nonce_match = re.search(r'nonce="([^"]+)"', auth_header)
+        realm_match = re.search(r'realm="([^"]+)"', auth_header)
+
+        if nonce_match and realm_match:
+            nonce = nonce_match.group(1)
+            realm = realm_match.group(1)
+
+            # Các thông tin cần thiết để tính Digest Authentication
+            username = "bui"
+            password = "123"
+            method = "GET"
+            uri = "/test1"
+            cnonce = "xyz789"
+            nc = "00000001"
+            qop = "auth"
+
+            # Tính response Digest Authentication
+            response_value = calculate_digest_response(username, password, realm, method, uri, nonce, cnonce, nc, qop)
+
+            # Gửi request lần 2 với response đã tính
+            headers["Authorization"] = f'Digest username="{username}", realm="{realm}", nonce="{nonce}", uri="{uri}", response="{response_value}", qop="{qop}", nc="{nc}", cnonce="{cnonce}"'
+            response_2 = requests.get(url, headers=headers)
+
+            if response_2.status_code == 200:
+                return {"status": 200, "nonce": nonce, "response": response_value}
+            else:
+                return {"error": "Authentication failed in step 2", "status": response_2.status_code}
+
+    return {"error": "Request failed", "status": response.status_code}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
