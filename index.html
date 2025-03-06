@@ -61,37 +61,3 @@
 
 
 
-import hashlib
-
-def md5_hash(data):
-    """Tạo MD5 hash của chuỗi"""
-    return hashlib.md5(data.encode()).hexdigest()
-
-def calculate_digest_response(username, password, realm, method, uri, nonce, cnonce, nc, qop):
-    """Tính giá trị response cho Digest Authentication"""
-
-    # Bước 1: Tính HA1 (Dùng mật khẩu gốc)
-    HA1 = md5_hash(f"{username}:{realm}:{password}")
-
-    # Bước 2: Tính HA2 (Dùng phương thức và URI)
-    HA2 = md5_hash(f"{method}:{uri}")
-
-    # Bước 3: Tính Response dựa trên nonce, cnonce, nc, qop
-    response = md5_hash(f"{HA1}:{nonce}:{nc}:{cnonce}:{qop}:{HA2}")
-
-    return response
-
-
-username = "bui"  # Username gửi trong Authorization
-password = "123"  # Mật khẩu thực tế
-realm = "dang"  # Lấy từ WWW-Authenticate của server
-method = "GET"  # Phương thức HTTP (GET hoặc POST)
-uri = "/api/login"  # Đường dẫn request
-nonce = "abc123"  # Nonce từ server (Authorization header)
-cnonce = "xyz789"  # Client nonce (Authorization header)
-nc = "00000001"  # Nonce count (Authorization header)
-qop = "auth"  # Quality of Protection (Authorization header)
-
-response = calculate_digest_response(username, password, realm, method, uri, nonce, cnonce, nc, qop)
-
-print(f"Computed Response: {response}")
