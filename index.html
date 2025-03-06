@@ -61,3 +61,7 @@
 
 
 
+def extract_dankkk_value(response_text):
+    """Trích xuất giá trị từ input có name='dankkk'"""
+    match = re.search(r'<input[^>]*name=["\']dankkk["\'][^>]*value=["\']([^"\']+)["\']', response_text)
+    return match.group(1) if match else None
