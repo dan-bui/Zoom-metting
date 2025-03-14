@@ -61,4 +61,16 @@
 
 
 
+import base64
+
+# Chuỗi ban đầu (tiếng Nhật)
+original_text = "日本あノ"
+
+# Mã hóa chuỗi thành Base64
+encoded_text = base64.b64encode(original_text.encode('utf-8'))
+print(f"Base64 Encoded: {encoded_text.decode()}")
+
+# Giải mã chuỗi Base64 về UTF-8
+decoded_text = base64.b64decode(encoded_text).decode('utf-8')
+print(f"Decoded Text: {decoded_text}")
 
