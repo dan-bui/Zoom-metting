@@ -62,34 +62,3 @@
 
 
 
-from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse
-import logging
-
-# Khởi tạo ứng dụng FastAPI
-app = FastAPI()
-
-# Cấu hình ghi log vào file
-logging.basicConfig(filename='request_log.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
-
-# Endpoint để nhận tất cả các request GET
-@app.get("/")
-async def root(request: Request):
-    # Lấy địa chỉ IP của client gửi request
-    client_host = request.client.host
-
-    # Ghi log lại request
-    logging.info(f"Received request from {client_host}")
-
-    # Trả về phản hồi dạng text để kiểm tra từ Excel
-    return PlainTextResponse("Hello from FastAPI!")
-
-# Endpoint tùy chỉnh cho các request khác
-@app.get("/test")
-async def test(request: Request):
-    client_host = request.client.host
-    logging.info(f"Received request to /test from {client_host}")
-    return PlainTextResponse("You reached /test endpoint")
-
-uvicorn main:app --host 0.0.0.0 --port 8000
-
