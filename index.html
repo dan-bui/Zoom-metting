@@ -60,24 +60,4 @@
 </html>
 
 
-from urllib.parse import parse_qs, urlencode
-
-# Request body input
-body1 = "a=1&b=2&e=4"
-body2 = "a=&b=2&c=3"
-
-# Parse chuỗi thành dict
-params1 = parse_qs(body1)
-params2 = parse_qs(body2)
-
-# Loại bỏ key đã tồn tại trong body1
-for key in params2:
-    if key not in params1:
-        params1[key] = params2[key]
-
-# Chuyển dict trở lại chuỗi
-merged_body = urlencode(params1, doseq=True)
-
-# Kết quả
-print(merged_body)
 
