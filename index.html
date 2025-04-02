@@ -1,63 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+def merge_bodies(body1, body2):
+    # Tách param=value của body1 và body2 thành list
+    params1 = body1.split('&')
+    params2 = body2.split('&')
 
-    <title>Clone Zoom với Stringee hihi</title>
+    # Tạo set chứa tên param trong body1
+    keys1 = set(param.split('=')[0] for param in params1 if '=' in param)
 
-    <!-- import the webpage's stylesheet -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css"
-    />
-    <link rel="stylesheet" href="/style.css" />
+    # Lưu phần kết quả
+    merged = params1.copy()
 
-    <!-- import the webpage's javascript file -->
+    for param in params2:
+        if '=' not in param:
+            continue  # bỏ qua nếu không hợp lệ
+        key = param.split('=')[0]
+        if key not in keys1:
+            merged.append(param)
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios@0.20.0/dist/axios.min.js"></script>
-    <script src="https://cdn.stringee.com/sdk/web/2.2.1/stringee-web-sdk.min.js"></script>
-  </head>
-  <body>
-    <div class="container has-text-centered" v-cloak id="app">
-      <h1 class="title">
-        Zoom meeting
-        <span class="header-highlight">Stringee API</span>
-      </h1>
+    return '&'.join(merged)
 
-      <div>
-        <button class="button is-primary" v-if="!room" @click="createRoom">
-          Create Meeting
-        </button>
-
-        <button class="button is-info" v-if="!room" @click="joinWithId">
-          Join Meeting
-        </button>
-
-        <button class="button is-info" v-if="room" @click="publish(true)">
-          Share Desktop
-        </button>
-      </div>
-
-      <div v-if="roomId" class="info">
-        <p>You are in the room <strong>{{roomId}}</strong>.</p>
-        <p>
-          Send this link to your friends to join the room
-          <a v-bind:href="roomUrl" target="_blank">{{roomUrl}}</a>.
-        </p>
-        <p>Or you can also copy <code>{{roomId}}</code> to share.</p>
-      </div>
-    </div>
-
-    <div class="container">
-      <div id="videos"></div>
-    </div>
-  </body>
-  <script src="/api.js"></script>
-  <script src="/script.js"></script>
-</html>
-
-
-
+# Test case
+body1 = "a=1&b=2&e="
+body2 = "a=&cc=2&c=3"
+result = merge_bodies(body1, body2)
+print(result)
