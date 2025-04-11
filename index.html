@@ -1,1 +1,28 @@
+document.getElementById("autoFormEntryButton").addEventListener("click", () => {
+  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+    if (tabs[0]) {
+      browser.tabs.sendMessage(tabs[0].id, { action: "sayHello" }).catch((err) => {
+        console.error(" Gửi message lỗi:", err);
+      });
+    } else {
+      console.error(" Không tìm thấy tab nào.");
+    }
+  });
+});
+
+
+
+browser.runtime.onMessage.addListener((message) => {
+  if (message.action === "sayHello") {
+    console.log("hello");
+  }
+});
+
+
+"content_scripts": [
+  {
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+  }
+],
 
