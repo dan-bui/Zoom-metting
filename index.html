@@ -1,1 +1,27 @@
-ưkjdlc
+from urllib.parse import parse_qs, urlencode
+
+def so_sanh_params(body1, body2):
+    # Phân tích chuỗi query string thành dict
+    dict1 = parse_qs(body1)
+    dict2 = parse_qs(body2)
+
+    # Chuyển từ dict có value là list -> value là str
+    dict1 = {k: v[0] for k, v in dict1.items()}
+    dict2 = {k: v[0] for k, v in dict2.items()}
+
+    # Tìm các param giống và khác
+    param_giong = {k: v for k, v in dict2.items() if k in dict1}
+    param_khac = {k: v for k, v in dict2.items() if k not in dict1}
+
+    # Chuyển dict thành chuỗi query string
+    param_giong_str = urlencode(param_giong)
+    param_khac_str = urlencode(param_khac)
+
+    print("body param 2 giống:", param_giong_str)
+    print("body param 2 khác :", param_khac_str)
+
+# Ví dụ
+body1 = "a=1&b=2&f=33"
+body2 = "c=1&f=00&d=2&b=44&e=5"
+
+so_sanh_params(body1, body2)
