@@ -1,1 +1,22 @@
 
+/ Auto Form Entry button - Điền "shindantest" vào input trống trên trang hiện tại
+autoFormEntryButton.addEventListener("click", () => {
+  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+    const activeTab = tabs[0];
+    browser.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      function: () => {
+        const inputs = document.querySelectorAll("input");
+        inputs.forEach((input) => {
+          if (input.value === "") {
+            input.value = "shindantest";
+          }
+        });
+      },
+    }).then(() => {
+      console.log("Auto Form Entry completed.");
+    }).catch((error) => {
+      console.error("Error executing Auto Form Entry:", error);
+    });
+  });
+});
