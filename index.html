@@ -1,1 +1,24 @@
+browser.runtime.onMessage.addListener((message) => {
+  if (message.action === "extractInputLabels") {
+    try {
+      const inputs = document.querySelectorAll("input");
 
+      const labelArray = Array.from(inputs).map(input => {
+        // Tìm nội dung mô tả input
+        const labelText =
+          input.placeholder ||
+          input.name ||
+          input.id ||
+          (input.labels && input.labels[0]?.textContent) ||
+          input.closest("label")?.textContent ||
+          "";
+
+        return labelText.trim();
+      });
+
+      console.log("📝 Các mô tả input:", labelArray);
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy thông tin input:", err);
+    }
+  }
+});
