@@ -1,1 +1,206 @@
+autoEntryButton.addEventListener("click", () => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+      if (tabs[0]) {
+        browser.tabs.sendMessage(tabs[0].id, { action: "extractInputLabels" }).catch((err) => {
+          console.error("Send message error:", err);
+        });
+      } else {
+        console.error("No active tab found.");
+      }
+    });
+  });
 
+
+
+browser.runtime.onMessage.addListener((message) => {
+    if (message.action === "extractInputLabels") {
+      console.log("🔍 Bắt đầu kiểm tra input/textarea");
+  
+      function isSystemField(name = "") {
+        return /token|formid|_bk|_e_pos|_e_error|_hidden/i.test(name);
+      }
+  
+      function getLabelText(element) {
+        let current = element.closest("tr, li, div, td, th");
+        while (current) {
+          const texts = Array.from(current.querySelectorAll("label, span, p, th, div"))
+            .filter((node) => {
+              const cls = node.className || "";
+              return !/(error|errMsg|formError|alert|invalid|close)/i.test(cls);
+            })
+            .map((node) => node.textContent?.trim())
+            .filter((text) => text && text.length > 0);
+          if (texts.length > 0) return texts;
+          current = current.parentElement;
+        }
+        return ["(no label text)"];
+      }
+  
+      function adjustValue(value, minlength = 0, maxlength = Infinity) {
+        let finalValue = value;
+        while (finalValue.length < minlength) {
+          finalValue += finalValue.slice(-1);
+        }
+        if (finalValue.length > maxlength) {
+          finalValue = finalValue.slice(0, maxlength);
+        }
+        return finalValue;
+      }
+  
+      function detectTextPatternValue(hint, maxlength, minlength) {
+        const max = isNaN(parseInt(maxlength)) ? 1 : parseInt(maxlength);
+  
+        if (/(電話番号|phone|denwa|でんわ|denwabango|tel|telephone)/i.test(hint)) {
+          return "09000000000";
+        }
+        if (/(zipcode|yubin|yuubin|yubinbango|yuubinbango|郵便番号|郵便|ゆうびん|ユウビン)/i.test(hint)) {
+          if (max === 8) return "100-0000";
+          if (max === 7) return "1000000";
+          if (max === 3) return "100";
+          if (max === 4) return "0000";
+          return "1000000";
+        }
+        if (/番号/i.test(hint) && !/電話番号|郵便番号/.test(hint)) {
+          return "8".repeat(max);
+        }
+  
+        if (/(mail|メールアドレス|メール|meru|mailaddress)/i.test(hint)) {
+          return "test@gmail.com";
+        }
+  
+        return "tesst";
+      }
+  
+      function isUserInput(input) {
+        const style = window.getComputedStyle(input);
+        const type = input.type?.toLowerCase() || "text";
+        const name = input.name || "";
+  
+        return (
+          !input.disabled &&
+          !input.readOnly &&
+          !isSystemField(name) &&
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          parseFloat(style.opacity) > 0 &&
+          input.offsetParent !== null &&
+          input.value.trim() === ""
+        );
+      }
+  
+      function isUserTextarea(textarea) {
+        const style = window.getComputedStyle(textarea);
+        const name = textarea.name || "";
+  
+        return (
+          !textarea.disabled &&
+          !textarea.readOnly &&
+          !isSystemField(name) &&
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          parseFloat(style.opacity) > 0 &&
+          textarea.offsetParent !== null &&
+          textarea.value.trim() === ""
+        );
+      }
+  
+      function processFields(inputs, textareas) {
+        const userInputs = Array.from(inputs).filter(isUserInput);
+        const userTextareas = Array.from(textareas).filter(isUserTextarea);
+        const allUserFields = [...userInputs, ...userTextareas];
+  
+        if (allUserFields.length === 0) return null;
+  
+        const results = [];
+  
+        allUserFields.forEach((field) => {
+          const tag = field.tagName.toLowerCase();
+          const type = field.type?.toLowerCase() || "text";
+          const id = field.id?.toLowerCase() || "";
+          const placeholder = field.placeholder?.toLowerCase() || "";
+          const className = field.className?.toLowerCase() || "";
+          const nameAttr = field.name?.toLowerCase() || "";
+          const labelText = getLabelText(field).join(" / ").toLowerCase();
+          const hint = `${id} ${placeholder} ${labelText} ${className} ${nameAttr}`;
+  
+          const maxlength = field.getAttribute("maxlength");
+          const minlength = field.getAttribute("minlength");
+  
+          let value = "helloo";
+  
+          if (type === "tel") value = "08000000000";
+          else if (type === "time") value = "11:11";
+          else if (type === "number") value = "2";
+          else if (type === "url") value = "http://hello.hello";
+          else if (type === "email") value = "test@gmail.com";
+          else if (type === "text") {
+            value = detectTextPatternValue(hint, maxlength, minlength);
+          }
+  
+          const min = isNaN(parseInt(minlength)) ? 1 : parseInt(minlength);
+          const max = isNaN(parseInt(maxlength)) ? Infinity : parseInt(maxlength);
+          const finalValue = adjustValue(value, min, max);
+  
+          field.value = finalValue;
+          field.dispatchEvent(new Event("input", { bubbles: true }));
+          field.dispatchEvent(new Event("change", { bubbles: true }));
+  
+          results.push({
+            tag,
+            id: field.id || "(no id)",
+            name: field.name || "",
+            class: field.className || "",
+            type: field.type || "textarea",
+            placeholder: field.placeholder || "",
+            maxlength: maxlength || "",
+            minlength: minlength || "",
+            text: getLabelText(field).join(" / "),
+          });
+        });
+  
+        return results;
+      }
+  
+      // 👉 Try on main document
+      const mainResults = processFields(
+        document.querySelectorAll("input"),
+        document.querySelectorAll("textarea")
+      );
+  
+      if (mainResults && mainResults.length > 0) {
+        console.table(mainResults);
+        return;
+      }
+  
+      // 👉 No valid fields on main page — Try iframe
+      const iframe = document.querySelector("iframe");
+      if (!iframe) {
+        console.warn("⚠️ Không thấy input và cũng không có iframe nào.");
+        return;
+      }
+  
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          console.warn("⚠️ Không thể truy cập nội dung iframe.");
+          return;
+        }
+  
+        const iframeResults = processFields(
+          iframeDoc.querySelectorAll("input"),
+          iframeDoc.querySelectorAll("textarea")
+        );
+  
+        if (!iframeResults || iframeResults.length === 0) {
+          console.warn("⚠️ Không thấy input trong iframe.");
+          return;
+        }
+  
+        console.log("📋 Kết quả input/textarea trong iframe:");
+        console.table(iframeResults);
+      } catch (e) {
+        console.error("❌ Lỗi khi xử lý iframe:", e);
+      }
+    }
+  });
+  
