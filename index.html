@@ -1,1 +1,54 @@
 
+.tooltip {
+      position: absolute;
+      background: rgba(60, 60, 60, 0.95);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      white-space: nowrap;
+      z-index: 9999;
+      display: none;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    .tooltip::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 10px;
+      border-width: 6px;
+      border-style: solid;
+      border-color: rgba(60, 60, 60, 0.95) transparent transparent transparent;
+    }
+
+
+    <div id="tooltip" class="tooltip">[mail: test@gmail.com]</div>
+
+  <script>
+    const tooltip = document.getElementById("tooltip");
+    const button = document.getElementById("autoFormEntryButton");
+
+    const entries = {
+      "mail": "test@gmail.com",
+      "tel": "09000000000",
+      "zip": "1000000"
+    };
+
+    const formatted = Object.entries(entries)
+      .map(([k, v]) => `[${k}: ${v}]`)
+      .join(' ');
+
+    button.addEventListener("mouseenter", () => {
+      tooltip.innerText = formatted;
+      const rect = button.getBoundingClientRect();
+      tooltip.style.top = rect.top + window.scrollY - 10 + "px";
+      tooltip.style.left = rect.left + window.scrollX + "px";
+      tooltip.style.display = "block";
+    });
+
+    button.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+  </script>
