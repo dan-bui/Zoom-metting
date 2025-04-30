@@ -1,1 +1,69 @@
+<table id="keyValueTable">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>mail</td>
+          <td><input type="text" data-key="mail" placeholder="test@gmail.com" /></td>
+        </tr>
+        <tr>
+          <td>tel</td>
+          <td><input type="text" data-key="tel" placeholder="09000000000" /></td>
+        </tr>
+        <tr>
+          <td>number</td>
+          <td><input type="text" data-key="number" placeholder="8" /></td>
+        </tr>
+        <tr>
+          <td>other</td>
+          <td><input type="text" data-key="other" placeholder="heloo" /></td>
+        </tr>
+      </tbody>
+    </table>
 
+
+
+
+    const cleanFormButton = document.getElementById("cleanFormButton");
+
+    // ✅ Hàm lấy key-value từ input/textarea trong bảng
+function getUserOverrides() {
+  const keyValuePairs = {};
+  const inputs = document.querySelectorAll("#keyValueTable [data-key]");
+
+  inputs.forEach((el) => {
+    const key = el.getAttribute("data-key");
+    const value = el.value.trim();
+    if (key) keyValuePairs[key] = value;
+  });
+
+  return keyValuePairs;
+}
+
+autoEntryButton.addEventListener("click", () => {
+  const userOverrides = getUserOverrides();
+  console.log("🎯 Gửi dữ liệu:", userOverrides);
+
+  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+    if (tabs[0]) {
+      browser.tabs.sendMessage(tabs[0].id, {
+        action: "extractInputLabels",
+        userOverrides
+      }).catch((err) => {
+        console.error("Send message error:", err);
+      });
+    }
+  });
+});
+
+cleanFormButton.addEventListener("click", () => {
+  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+    if (tabs[0]) {
+      browser.tabs.sendMessage(tabs[0].id, { action: "cleanFormFields" });
+    }
+  });
+});
