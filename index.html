@@ -1,5 +1,3 @@
-
-wget https://github.com/gentilkiwi/mimikatz/releases/download/2.2.0-20230822/mimikatz_trunk.zip
-unzip mimikatz_trunk.zip
-cd x64  # hoặc Win32 tùy target
-python3 -m http.server 8000
+import uuid
+boundary = "----boundary" + uuid.uuid4().hex
+print(boundary)
