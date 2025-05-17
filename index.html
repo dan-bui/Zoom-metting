@@ -1,1 +1,38 @@
 
+import base64
+import hashlib
+
+# Chuỗi hash từ file bạn gửi
+hash_str = "{PKCS5S2}ueMu+nTGBtFeGXGBLXXFcJLdSF4uVkZxMQ1Bst8wm3uhZcDs56a2ProZiS0k2hv"
+
+# Bỏ phần tiền tố
+encoded_data = hash_str.replace("{PKCS5S2}", "")
+
+# Giải mã base64
+decoded = base64.b64decode(encoded_data)
+
+# Giả sử cấu trúc:
+#   - 16 byte salt
+#   - phần còn lại là derived key
+salt = decoded[:16]
+stored_hash = decoded[16:]
+
+# PBKDF2 config – cần đoán hoặc biết:
+iterations = 1000  # thử 1000 trước, tùy app có thể là 10k hoặc 65k...
+dk_len = len(stored_hash)  # độ dài hash cần sinh ra
+algo = 'sha1'  # hoặc 'sha256' nếu bạn biết chính xác hệ thống dùng cái gì
+
+# ✅ Test password
+def check_password(password):
+    derived = hashlib.pbkdf2_hmac(algo, password.encode(), salt, iterations, dklen=dk_len)
+    return derived == stored_hash
+
+# 📂 Thử brute-force bằng wordlist
+with open("wordlist.txt", "r") as f:
+    for line in f:
+        pwd = line.strip()
+        if check_password(pwd):
+            print(f"[✅] Found password: {pwd}")
+            break
+    else:
+        print("❌ Not found in wordlist.")
