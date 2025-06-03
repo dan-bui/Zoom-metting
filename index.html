@@ -1,2 +1,23 @@
+const input = `
+aa
+aa
+bb
+bb
+bb
+`.trim().split('\n');
 
-&('n'+'s'+'l'+'o'+'o'+'k'+'u'+'p')[char]34+'kk@gmail.com'+[char]34
+const result = [];
+let prev = '';
+let count = 0;
+
+for (const val of input) {
+  if (val === prev) {
+    count++;
+  } else {
+    prev = val;
+    count = 1;
+  }
+  result.push(`${val}#${count}`);
+}
+
+console.log(result.join('\n'));
