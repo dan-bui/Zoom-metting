@@ -1,1 +1,32 @@
+import httpx
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
+app = FastAPI()
+
+@app.get("/kk")
+async def send_request_and_parse_location():
+    url = "http://pppppp.pppp/kk"
+    headers = {
+        "Host": "pppppp.pppp",
+        "Cookie": "aaa=bbb"
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    # In toàn bộ response (server-side log)
+    print("Status code:", response.status_code)
+    print("Headers:", dict(response.headers))
+    print("Body:", response.text)
+
+    # Trích xuất ID từ header Location (nếu có)
+    location = response.headers.get("location", "")
+    id_value = None
+    if "?" in location:
+        id_value = location.split("?")[-1]
+
+    return JSONResponse(content={"id": id_value})
