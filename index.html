@@ -1,1 +1,24 @@
+function getTextHint(element) {
+      const visited = new Set();
+      let current = element;
+      const collectedTexts = [];
+      while (current) {
+        if (visited.has(current)) break; // avoid infinite loop
+        visited.add(current);
 
+        const texts = Array.from(current.children).flatMap((node) => {
+          if (node.tagName && ["LABEL", "SPAN", "P", "TH", "DIV"].includes(node.tagName)) {
+            const text = node.textContent?.trim();
+            return text ? [text] : [];
+          }
+          return [];
+        });
+
+        if (texts.length > 0) {
+          collectedTexts.unshift(texts.join(" "));
+        }
+
+        current = current.parentElement;
+      }
+      return collectedTexts.join(" ");
+    }
