@@ -1,1 +1,29 @@
+function getTextHint(element) {
+      let container = element.closest("div, li, tr, td, form");
+      const visited = new Set();
+      const collectedTexts = [];
 
+      while (container && container.nodeType === Node.ELEMENT_NODE) {
+        if (visited.has(container)) break;
+        visited.add(container);
+
+        const labelNodes = Array.from(container.querySelectorAll("label"));
+        const otherNodes = Array.from(container.querySelectorAll("span, p, th, div"));
+
+        const labelTexts = labelNodes
+          .map((node) => node.textContent?.trim())
+          .filter((text) => text && text.length > 0);
+
+        const otherTexts = otherNodes
+          .map((node) => node.textContent?.trim())
+          .filter((text) => text && text.length > 0);
+
+        if (labelTexts.length > 0) collectedTexts.unshift(...labelTexts);
+        else if (otherTexts.length > 0) collectedTexts.push(...otherTexts);
+
+        container = container.parentElement;
+      }
+
+      return collectedTexts.join(" ").trim();
+    }
+    }
