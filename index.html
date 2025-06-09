@@ -1,13 +1,1 @@
-const minlength = parseInt(field.getAttribute("minlength")) || 0;
-const maxlengthAttr = field.getAttribute("maxlength");
-const maxlength = maxlengthAttr !== null ? parseInt(maxlengthAttr) : Infinity;
 
-// Kéo dài chuỗi nếu ngắn hơn minlength
-while (value.length < minlength) {
-  value += value;
-}
-
-// Cắt bớt chuỗi nếu dài hơn maxlength
-if (value.length > maxlength) {
-  value = value.slice(0, maxlength);
-}
