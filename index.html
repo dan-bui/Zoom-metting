@@ -1,1 +1,142 @@
+browser.runtime.onMessage.addListener((message) => {
+  if (message.action === "extractInputLabels") {
+    console.log("Extension log: Start checking input/textarea");
 
+    function getTextHint(element) {
+      let current = element;
+      while (current) {
+        const texts = Array.from(current.querySelectorAll("label, span, p, th, div"))
+          .map((node) => node.textContent?.trim())
+          .filter((text) => text && text.length > 0);
+        if (texts.length > 0) return texts.join(" ");
+        current = current.parentElement;
+      }
+      return "";
+    }
+
+    function detectValueByHint(hint, type) {
+      if (!hint) return "しんだん";
+
+      const rules = [
+        [/メール/i, "aa@a.com"],
+        [/年月日/i, "2000/01/01"],
+        [/郵便番号/i, "1000011"],
+        [/電話番号/i, "0801111"],
+        [/携帯番号/i, "08000000"],
+        [/[^電話郵便携帯]番号/i, "1111"],
+        [/数/i, "222"],
+        [/年齢/i, "８"],
+        [/氏名.*カナ/i, "シンダン"],
+        [/氏名.*カタカナ/i, "シンダン"],
+        [/氏名.*ローマ字/i, "shindan"],
+        [/氏名.*漢字/i, "しんだん"],
+        [/名義/i, "しんだん"],
+        [/口座番号/i, "５５５"],
+        [/代/i, "９９"],
+        [/費/i, "９８"],
+      ];
+
+      for (const [regex, value] of rules) {
+        if (regex.test(hint)) return value;
+      }
+
+      if (type === "number") return "56";
+      return "kkkk";
+    }
+
+    function isValidField(input) {
+      const style = window.getComputedStyle(input);
+      return (
+        !input.disabled &&
+        !input.readOnly &&
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        parseFloat(style.opacity) > 0 &&
+        input.offsetParent !== null
+      );
+    }
+
+    function processFields(inputs) {
+      const validInputs = Array.from(inputs).filter(isValidField);
+      const results = [];
+
+      validInputs.forEach((field) => {
+        const type = field.type?.toLowerCase() || "text";
+        const hintText = getTextHint(field);
+        const value = detectValueByHint(hintText, type);
+
+        field.value = "";
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.value = value;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+
+        results.push({
+          tag: field.tagName.toLowerCase(),
+          id: field.id || "(no id)",
+          name: field.name || "",
+          class: field.className || "",
+          type: field.type || "text",
+          placeholder: field.placeholder || "",
+          text: hintText,
+          value: value
+        });
+      });
+
+      return results;
+    }
+
+    const mainResults = processFields(document.querySelectorAll("input"));
+
+    if (mainResults && mainResults.length > 0) {
+      console.table(mainResults);
+      return;
+    }
+
+    const iframe = document.querySelector("iframe");
+    if (iframe) {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          console.warn("Extension log: Unable to access iframe content.");
+          return;
+        }
+        const iframeResults = processFields(
+          iframeDoc.querySelectorAll("input")
+        );
+        if (!iframeResults || iframeResults.length === 0) {
+          console.warn("Extension log: No input tag found in iframe tag.");
+          return;
+        }
+        console.log("Extension log: Input result in iframe:");
+        console.table(iframeResults);
+      } catch (e) {
+        console.error("Extension log: Error processing iframe:", e);
+      }
+    }
+  }
+
+  if (message.action === "cleanFormFields") {
+    console.log("Extension log: Clearing all input and textarea values");
+
+    function clearFieldsFromDocument(doc) {
+      const inputs = doc.querySelectorAll("input:not([type=hidden]):not([type=button]):not([type=submit])");
+      const textareas = doc.querySelectorAll("textarea");
+      inputs.forEach((input) => input.value = "");
+      textareas.forEach((textarea) => textarea.value = "");
+    }
+
+    clearFieldsFromDocument(document);
+    const iframes = document.querySelectorAll("iframe");
+    iframes.forEach((iframe) => {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iframeDoc) {
+          clearFieldsFromDocument(iframeDoc);
+        }
+      } catch (err) {
+        console.warn("Extension log: Cannot access iframes of other origin:", err);
+      }
+    });
+  }
+});
