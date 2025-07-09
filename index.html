@@ -1,9 +1,1 @@
-Get-ChildItem -Path C:\ -Recurse -File -ErrorAction SilentlyContinue |
-Where-Object {
-    try {
-        $acl = Get-Acl $_.FullName
-        $acl.Access | Where-Object {
-            $_.IdentityReference -like "$env:USERNAME*" -and $_.FileSystemRights -match "FullControl"
-        }
-    } catch {}
-} | Select-Object FullName
+Get-ChildItem -Path C:\ -Recurse -Include *.exe, *.dll -File -ErrorAction SilentlyContinue | Where-Object { try {        $acl = Get-Acl $_.FullName $acl.Access | Where-Object { $_.IdentityReference -like "$env:USERNAME*" -and ($_.FileSystemRights -match "Write" -or $_.FileSystemRights -match "Modify" -or $_.FileSystemRights -match "FullControl")}    } catch {} } | Select-Object FullName
