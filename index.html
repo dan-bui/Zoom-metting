@@ -1,1 +1,9 @@
-Get-ChildItem -Path C:\ -Filter "KKK P" -Directory -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+Get-ChildItem -Path C:\ -Recurse -File -ErrorAction SilentlyContinue |
+Where-Object {
+    try {
+        $acl = Get-Acl $_.FullName
+        $acl.Access | Where-Object {
+            $_.IdentityReference -like "$env:USERNAME*" -and $_.FileSystemRights -match "FullControl"
+        }
+    } catch {}
+} | Select-Object FullName
