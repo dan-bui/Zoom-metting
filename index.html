@@ -1,1 +1,1 @@
-(Get-Acl "C:\service\nc.exe").Access | Format-Table IdentityReference, FileSystemRights, AccessControlType
+schtasks /query /fo LIST /v | Select-String "TaskName|Next Run Time" | ForEach-Object -Begin { $task = "" } ` -Process { if ($_ -like "TaskName:*") { $task = $_ } if ($_ -like "Next Run Time:*11/07/2025*") { "$task`n$_`n" }    }
