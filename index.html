@@ -1,1 +1,1 @@
-Get-WmiObject Win32_Service | Where-Object { $_.StartMode -eq "Auto" -and $_.PathName -notlike "C:\Windows\*" } | Select-Object DisplayName, Name, PathName
+(Get-Acl "C:\service\nc.exe").Access | Format-Table IdentityReference, FileSystemRights, AccessControlType
