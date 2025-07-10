@@ -1,1 +1,1 @@
-Get-ChildItem -Path C:\ -Recurse -Include *.exe -ErrorAction SilentlyContinue | Where-Object {(Get-Acl $_.FullName).Access | Where-Object {$_.IdentityReference -match "$env:USERNAME" -and($_.FileSystemRights -match "Modify" -or $_.FileSystemRights -match "FullControl")}}
+wmic service get name,displayname,pathname,startmode | findstr /i "Auto" | findstr /i /v "C:\Windows\\"
