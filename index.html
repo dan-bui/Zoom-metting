@@ -1,1 +1,1 @@
-schtasks /query /fo LIST /v | Select-String "TaskName|Next Run Time" | ForEach-Object -Begin { $task = "" } ` -Process { if ($_ -like "TaskName:*") { $task = $_ } if ($_ -like "Next Run Time:*11/07/2025*") { "$task`n$_`n" }    }
+Get-ChildItem -Path C:\ -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { (Get-Acl $_.FullName -ErrorAction SilentlyContinue).Access | Where-Object { $_.IdentityReference -match "BUILTIN\\Users" -and $_.FileSystemRights -match "FullControl" }} | Select-Object FullName
