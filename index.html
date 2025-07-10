@@ -1,1 +1,1 @@
-Get-WmiObject Win32_Service | Where-Object { $_.PathName -like "*tracing*" } | Select Name, PathName, StartMode
+schtasks /query /fo LIST /v | findstr /C:"TaskName" /C:"Author" | findstr /C:"admin"
