@@ -1,1 +1,2 @@
+Find-InterestingDomainAcl | Where-Object {    ($_.ActiveDirectoryRights -match "GenericWrite|WriteOwner|WriteDACL|All") -and    ($_.IdentityReference -match "stephanie")}
 
