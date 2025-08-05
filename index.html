@@ -1,1 +1,1 @@
-Find-InterestingDomainAcl -ResolveGUIDs | Where-Object {    $_.IdentityReference -match "sale"}
+Get-DomainGroup -Identity sale | Select-Object samaccountname, distinguishedname
