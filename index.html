@@ -1,1 +1,76 @@
-Get-DomainGroup -Identity sale | Select-Object samaccountname, distinguishedname
+
+### 🔧 Cách tăng dung lượng swap trên Kali (tăng lên 4GB chẳng hạn):
+
+> ⚠️ Cẩn thận khi thao tác, tránh xóa nhầm file hệ thống.
+
+#### **1. Tắt swap hiện tại:**
+
+```bash
+sudo swapoff /swapfile
+```
+
+#### **2. Xóa swapfile cũ:**
+
+```bash
+sudo rm /swapfile
+```
+
+#### **3. Tạo swapfile mới với kích thước 4GB:**
+
+```bash
+sudo fallocate -l 4G /swapfile
+```
+
+> Nếu `fallocate` không hoạt động, dùng:
+
+```bash
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+```
+
+#### **4. Cấp quyền:**
+
+```bash
+sudo chmod 600 /swapfile
+```
+
+#### **5. Định dạng file thành swap:**
+
+```bash
+sudo mkswap /swapfile
+```
+
+#### **6. Bật lại swap:**
+
+```bash
+sudo swapon /swapfile
+```
+
+#### **7. Kiểm tra lại:**
+
+```bash
+swapon --show
+```
+
+> Lúc này bạn sẽ thấy SIZE là `4096M`.
+
+---
+
+### 🔁 Nếu muốn duy trì sau khi reboot:
+
+Mở file `fstab`:
+
+```bash
+sudo nano /etc/fstab
+```
+
+Thêm dòng sau vào cuối file:
+
+```
+/swapfile none swap sw 0 0
+```
+
+---
+
+### ✅ Sau khi làm xong, thử chạy lại `hashcat` xem còn báo lỗi bộ nhớ không.
+
+Nếu bạn cần tôi viết thành script tự động thì bảo nhé.
