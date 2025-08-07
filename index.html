@@ -31,3 +31,13 @@ while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){
   $stream.Flush();
 }
 $client.Close()
+
+
+curl -X PUT http://target:8080/nifi-api/processors/82ff50a9-0198-1000-cf7c-4caa3e47fe9d/run-status \
+-H "Content-Type: application/json" \
+-d '{
+  "revision": {
+    "version": 1
+  },
+  "state": "RUNNING"
+}'
