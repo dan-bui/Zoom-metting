@@ -1,4 +1,16 @@
-systeminfo
-wmic qfe get HotFixID,InstalledOn | sort
-whoami /priv
-wmic service get name,displayname,pathname,startmode | findstr /i "Auto"
+Get-CimInstance Win32_Service | Where-Object { $_.StartName -eq "LocalSystem" -and $_.PathName } | ForEach-Object {
+    $bin = $_.PathName -replace '"','' -replace ' .+$',''
+    if (Test-Path $bin) {
+        $perm = icacls $bin 2>$null
+        if ($perm -match "$env:USERNAME.*\((F|M)\)") {
+            [PSCustomObject]@{
+                ServiceName = $_.Name
+                BinaryPath  = $bin
+                Permissions = ($perm -join "; ")
+            }
+        }
+    }
+} | Format-Table -AutoSize
+
+
+for %i in (exe dll bat cmd) do @icacls C:\*.%i /T /C | findstr /I /R "(F)\|(M)\|(WD)" | findstr /I "%USERNAME%"
