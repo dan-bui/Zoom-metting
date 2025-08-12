@@ -13,3 +13,13 @@ run
 rev.exe
 
 for /r C:\ %i in (*.exe) do @icacls "%i" 2>nul | findstr /I /R "(F)\|(M)\|(WD)" | findstr /I "%USERNAME%"
+
+Get-ChildItem C:\ -Recurse -Include *.exe -ErrorAction SilentlyContinue |
+ForEach-Object {
+    $acl = icacls $_.FullName 2>$null
+    if ($acl -match "$env:USERNAME.*\((F|M|WD)\)" -or
+        $acl -match "Authenticated Users.*\((F|M|WD)\)" -or
+        $acl -match "BUILTIN\\Users.*\((F|M|WD)\)") {
+        $_.FullName
+    }
+}
