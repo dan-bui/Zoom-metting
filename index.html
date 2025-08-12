@@ -13,4 +13,4 @@ Get-CimInstance Win32_Service | Where-Object { $_.StartName -eq "LocalSystem" -a
 } | Format-Table -AutoSize
 
 
-for %i in (exe dll bat cmd) do @icacls C:\*.%i /T /C | findstr /I /R "(F)\|(M)\|(WD)" | findstr /I "%USERNAME%"
+for %i in (exe dll bat cmd) do @icacls C:\*.%i /T /C /Q 2^>nul | findstr /I /R "(F)\|(M)\|(WD)" | findstr /I "%USERNAME%"
